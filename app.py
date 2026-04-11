@@ -1,77 +1,68 @@
 import streamlit as st
 
-st.set_page_config(page_title="Siemens SENTRON Master", layout="wide")
+st.set_page_config(page_title="Siemens Specialist Configurator", layout="wide")
+st.title("🛠️ Selettore Tecnico Siemens SENTRON V6")
 
-st.title("⚡ Siemens SENTRON - Configurazione Integrale")
-st.markdown("Basato su Catalogo Ottobre 2019: Magnetotermici (4.5/6/10/15kA) e Differenziali Puri/Magnetotermici.")
+# --- DATABASE INTEGRALE DAL PDF ---
+mcb_data = {
+    "4,5 kA (Serie 5SL3)": "5SL3",
+    "6 kA (Serie 5SL6)": "5SL6",
+    "10 kA (Serie 5SY4)": "5SY4",
+    "15 kA (Serie 5SY7)": "5SY7",
+    "25 kA (Serie 5SY8)": "5SY8"
+}
 
-tab1, tab2, tab3 = st.tabs(["Magnetotermici (MCB)", "Differenziali (RCCB/RCBO)", "Antincendio (AFDD)"])
+tab_mcb, tab_rccb = st.tabs(["MAGNETOTERMICI", "DIFFERENZIALI PURI"])
 
-# --- SEZIONE MAGNETOTERMICI (5SL / 5SY) ---
-with tab1:
-    c1, c2, c3 = st.columns(3)
+with tab_mcb:
+    st.subheader("Configurazione Interruttore Automatico")
+    c1, c2, c3, c4 = st.columns(4)
+    
     with c1:
-        potere = st.selectbox("Potere Interruzione", ["4,5 kA", "6 kA", "10 kA", "15 kA"], key="mcb_pot")
-        # Logica prefissi estratti dalle tabelle
-        mapping = {
-            "4,5 kA": {"1P+N (1UM)": "5SL30", "1P+N (2UM)": "5SL35", "2P": "5SL32"},
-            "6 kA": {"1P+N (1UM)": "5SL60", "1P+N (2UM)": "5SL65", "2P": "5SL62"},
-            "10 kA": {"1P": "5SY41", "2P": "5SY42", "3P": "5SY43", "4P": "5SY44", "1P+N": "5SY45", "3P+N": "5SY46"},
-            "15 kA": {"1P": "5SY71", "2P": "5SY72", "3P": "5SY73", "4P": "5SY74", "1P+N": "5SY75", "3P+N": "5SY76"}
-        }
-        tipo_mcb = st.selectbox("Esecuzione/Poli", list(mapping[potere].keys()))
-    with c2:
-        amp_mcb = st.selectbox("In (A)", ["0,5", "1", "2", "3", "4", "6", "10", "13", "16", "20", "25", "32", "40", "50", "63"], index=8)
-        a_code = amp_mcb.replace(",", "").zfill(2)
-    with c3:
-        curva = st.radio("Curva", ["B (6)", "C (7)", "D (8)"], index=1)
-    
-    codice_mcb = f"{mapping[potere][tipo_mcb]}{a_code}-{curva[-2]}"
-    st.info(f"**Codice Magnetotermico:** {codice_mcb}")
-
-# --- SEZIONE DIFFERENZIALI (PURI 5SV / COMPATTI 5SV1) ---
-with tab2:
-    st.subheader("Configurazione Differenziali")
-    st.markdown("*Nota: Include Serie 5SV (Puri) e Serie 5SV1 (Magnetotermici Differenziali 1UM)*")
-    
-    cat_diff = st.radio("Categoria", ["Puri (RCCB - 5SV)", "Magnetotermici Differenziali (RCBO - 5SV1)"], horizontal=True)
-    
-    d1, d2, d3 = st.columns(3)
-    
-    if cat_diff == "Puri (RCCB - 5SV)":
-        with d1:
-            classe = st.selectbox("Classe/Tipo", ["AC (0)", "A (6)", "F (3)", "B (4)"])
-            sens = st.selectbox("Sensibilità (IΔn)", ["10mA (1)", "30mA (3)", "300mA (6)"])
-        with d2:
-            poli_sv = st.selectbox("Poli", ["1P+N (1)", "3P+N (4)"])
-            in_sv = st.selectbox("Corrente Nominale (In)", ["16A (1)", "25A (2)", "40A (4)", "63A (6)", "80A (8)"])
-        with d3:
-            var = st.multiselect("Varianti", ["K (Superimmunizzato)", "S (Selettivo)"])
-            
-        # Costruzione codice 5SV
-        suff = ""
-        if "K (Superimmunizzato)" in var: suff = "KK01"
-        if "S (Selettivo)" in var: 
-            base_code = f"5SV36{poli_sv[-2]}{in_sv[-2]}-8" # I selettivi solitamente finiscono in -8
-        else:
-            base_code = f"5SV3{sens[-2]}{poli_sv[-2]}{in_sv[-2]}-{classe[-2]}"
-        st.success(f"**Codice Differenziale Puro:** {base_code}{suff}")
-
-    else: # RCBO 5SV1 (Magnetotermici Differenziali 1 modulo)
-        with d1:
-            p_int_rcbo = st.selectbox("Potere Interruzione", ["4,5 kA", "6 kA"])
-            classe_rcbo = st.selectbox("Tipo", ["AC", "A"])
-        with d2:
-            amp_rcbo = st.selectbox("Corrente (In)", ["6", "10", "13", "16", "20", "25", "32", "40"])
-            curva_rcbo = st.radio("Curva", ["B", "C"])
+        pot = st.selectbox("Potere Interruzione", list(mcb_data.keys()))
+        prefisso_base = mcb_data[pot]
         
-        pref_rcbo = "5SV1313" if p_int_rcbo == "4,5 kA" else "5SV1316"
-        cod_rcbo = f"{pref_rcbo}-{curva_rcbo}{amp_rcbo.zfill(2)}"
-        st.success(f"**Codice RCBO (1 Modulo):** {cod_rcbo}")
+    with c2:
+        poli = st.selectbox("Poli", ["1P", "1P+N (1 modulo)", "1P+N (2 moduli)", "2P", "3P", "3P+N", "4P"])
+        # Logica poli specifica Siemens
+        poli_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4", "1P+N (2 moduli)": "5", "3P+N": "6"}
+        
+    with c3:
+        amp = st.selectbox("Corrente (In)", ["0.5", "1", "2", "3", "4", "6", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
+        a_code = amp.replace(".", "").zfill(2)
+        
+    with c4:
+        curva = st.radio("Curva", ["B", "C", "D"])
+        curva_map = {"B": "6", "C": "7", "D": "8"}
 
-# --- SEZIONE AFDD ---
-with tab3:
-    st.info("Serie 5SV6: Protezione AFDD + Magnetotermico integrato (6kA)")
-    a_af = st.selectbox("Corrente AFDD", ["06", "10", "13", "16", "20", "25", "32", "40"], index=3)
-    c_af = st.radio("Curva Caratteristica", ["B", "C"], key="afdd_c")
-    st.success(f"**Codice AFDD:** 5SV6016-{c_af}{a_af}")
+    # LOGICA DI COSTRUZIONE FINALE
+    if poli == "1P+N (1 modulo)":
+        codice = f"{prefisso_base[:4]}0{a_code}-{curva_map[curva]}"
+    else:
+        codice = f"{prefisso_base}{poli_map[poli]}{a_code}-{curva_map[curva]}"
+    
+    st.code(f"CODICE PRODOTTO: {codice}", language="markdown")
+
+with tab_rccb:
+    st.subheader("Configurazione Differenziale Puro 5SV")
+    r1, r2, r3 = st.columns(3)
+    with r1:
+        tipo = st.selectbox("Classe", ["A (Impulsiva)", "AC (Sinusoidale)", "F (Inverter monofase)", "B (Universale CC)"])
+        sens = st.selectbox("Sensibilità (IΔn)", ["30 mA", "10 mA", "300 mA", "500 mA"])
+    with r2:
+        poli_d = st.radio("Poli", ["1P+N", "3P+N"])
+        in_d = st.selectbox("Corrente Nominale", ["25 A", "40 A", "63 A", "80 A", "16 A"])
+    with r3:
+        opt = st.multiselect("Esecuzioni Speciali", ["Superimmunizzato (K)", "Selettivo (S)"])
+
+    # Logica differenziali
+    t_map = {"A": "6", "AC": "0", "F": "3", "B": "4"}
+    s_map = {"30 mA": "3", "10 mA": "1", "300 mA": "6", "500 mA": "7"}
+    p_map = {"1P+N": "1", "3P+N": "4"}
+    i_map = {"16 A": "1", "25 A": "2", "40 A": "4", "63 A": "6", "80 A": "8"}
+    
+    suff = ""
+    if "Superimmunizzato (K)" in opt: suff = "KK01"
+    
+    codice_sv = f"5SV3{s_map[sens]}{p_map[poli_d]}{i_map[in_d]}-{t_map[tipo.split()[0]]}{suff}"
+    st.code(f"CODICE PRODOTTO: {codice_sv}", language="markdown")
