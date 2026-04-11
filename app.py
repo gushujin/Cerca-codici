@@ -60,7 +60,7 @@ with col_params:
         c1, c2, c3 = st.columns(3)
         with c1:
             tipo = st.selectbox("Classe", ["A (Impulsiva)", "AC (Sinusoidale)", "F (Frequenza)", "B (Universale CC)"])
-            sens = st.selectbox("Sensibilità (IΔn)", ["10 mA", "30 mA", "300 mA", "500 mA"])
+            sens = st.selectbox("Sensibilità (IΔn)", ["10mA", "30mA", "300mA", "500mA"])
         with c2:
             poli_sv = st.radio("Poli", ["1P+N", "3P+N"])
             in_sv = st.selectbox("Corrente (In)", ["16 A", "25 A", "40 A", "63 A", "80 A"])
@@ -115,7 +115,7 @@ with col_res:
         st.write("Il sistema sta mappando le caratteristiche tecniche su database esterni.")
         st.info(f"Parametri di ricerca: {p_int if 'p_int' in locals() else 'Standard'} | {poli if 'poli' in locals() else '1P+N'}")
     
-    st.button("📋 Copia Codice")
+    #st.button("📋 Copia Codice")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- TABELLA DI CONFRONTO VELOCE ---
