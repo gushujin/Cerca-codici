@@ -12,12 +12,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR: GESTIONE PRODUTTORE ---
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg", width=150)
-st.sidebar.title("Configuratore Multibrand")
-brand_active = st.sidebar.selectbox("Produttore Attivo", ["SIEMENS", "ABB", "SCHNEIDER"])
+# --- SIDEBAR: IMPOSTAZIONI DI SISTEMA ---
+st.sidebar.title("🛠️ System Settings")
+brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
 st.sidebar.divider()
-st.sidebar.caption("Dati sincronizzati con Catalogo SENTRON 10/2019")
+st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo SENTRON 10/2019")
 
 # --- TITOLO ---
 st.title("🔌 Portale Tecnico Siemens SENTRON")
