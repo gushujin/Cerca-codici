@@ -24,7 +24,7 @@ st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo SENTRON 10/2019")
 st.title("🔌 Portale Tecnico Siemens SENTRON")
 st.write(f"Configurazione attiva: **{brand}** | Rif. Documenti: **33_CF, 5_CF e 5SV1**")
 
-# --- SELEZIONE CATEGORIA (MULTI-SCELTA) ---
+# --- SELEZIONE CATEGORIA ---
 categoria = st.selectbox("Seleziona Categoria Prodotto", [
     "Magnetotermici (5SL, 5SY, 5SP)", 
     "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)", 
@@ -54,10 +54,9 @@ with col_params:
         p_map = {"1P": "1", "1P+N (1UM)": "0", "1P+N (2UM)": "5", "2P": "2", "3P": "3", "3P+N": "6", "4P": "4"}
         codice_final = f"{pref}{p_map[poli]}{amp.replace(',','')}-{curva[0]}{amp}"
 
-    # --- 2. MAGNETOTERMICI DIFFERENZIALI (INTEGRAZIONE 5SV1) ---
+    # --- 2. MAGNETOTERMICI DIFFERENZIALI (5SU1, 5SV1) ---
     elif categoria == "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)":
         tipo_md = st.radio("Scegli Modello", ["Standard (2 Moduli - 5SU1)", "Compatto (1 Modulo - 5SV1)"], horizontal=True)
-        
         if tipo_md == "Compatto (1 Modulo - 5SV1)":
             c1, c2 = st.columns(2)
             with c1:
@@ -70,9 +69,9 @@ with col_params:
                 amp_sv = st.selectbox("Ampere", ["06", "10", "13", "16", "20", "25", "32"])
             codice_final = f"5SV1{t_code}1{p_code}-{curva_sv}{amp_sv}"
         else:
-            codice_final = "5SU1..." # Logica standard
+            codice_final = "5SU1..." # Logica standard semplificata
 
-    # --- 3. DIFFERENZIALI PURI ---
+    # --- 3. DIFFERENZIALI PURI (5SV) ---
     elif categoria == "Differenziali Puri (5SV)":
         c1, c2 = st.columns(2)
         with c1:
@@ -83,19 +82,37 @@ with col_params:
             classe_d = st.selectbox("Classe", ["A (6)", "AC (0)", "F (3)", "B (4)"])
         codice_final = f"5SV3{sens[-2]}{poli_d[-2]}{amp_d[0]}-{classe_d[-2]}"
 
-    # --- ALTRE CATEGORIE ---
+    # --- 4. MAGNETOTERMICI SCATOLATI (3VA) ---
+    elif categoria == "Magnetotermici Scatolati (3VA)":
+        c1, c2 = st.columns(2)
+        with c1:
+            taglia = st.selectbox("Taglia (Frame)", ["3VA10 (100A)", "3VA11 (160A)", "3VA12 (250A)"])
+            f_code = taglia[3:5]
+            pdi_va = st.selectbox("Potere Interruzione (415V)", ["25 kA (B)", "36 kA (C)", "55 kA (S)", "70 kA (M)"])
+            p_va_code = pdi_va.split("(")[1][0]
+        with c2:
+            poli_va = st.selectbox("Poli", ["3 Poli", "4 Poli"])
+            po_code = "3" if "3" in poli_va else "4"
+            sganciatore = st.selectbox("Sganciatore", ["TM210 (Fisso)", "TM240 (Regolabile)"])
+            s_code = "ED" if "210" in sganciatore else "EF"
+            amp_va = st.selectbox("Corrente Nominale (In)", ["16", "25", "40", "63", "100", "160"])
+        
+        # Generazione codice radice 3VA
+        codice_final = f"3VA1{f_code}-{p_va_code}EE{po_code}2-{s_code}0"
+
+    # --- 5. ALTRE CATEGORIE ---
     else:
-        st.info("Configurazione in fase di aggiornamento per Scatolati e Accessori.")
+        st.info("Configurazione in fase di aggiornamento per Accessori e AFDD.")
         codice_final = "IN ELABORAZIONE"
 
 with col_res:
     st.subheader("📌 Risultato")
-    if brand == "SIEMENS":
+    if "SIEMENS" in brand:
         st.success(f"### `{codice_final}`")
-        st.caption("Codice d'ordinazione Siemens")
+        st.caption("Codice d'ordinazione Siemens (Radice)")
     else:
         st.warning(f"Cercando equivalente {brand}...")
-        st.info(f"Parametri: {categoria}")
+        st.info(f"Parametri selezionati per: {categoria}")
 
 st.divider()
-st.caption("Strumento di supporto tecnico - Verificare sempre sul catalogo ufficiale prima dell'ordine.")
+st.caption("Strumento di supporto tecnico - Verificare sempre sui cataloghi ufficiali Schneider/Siemens/ABB prima dell'ordine.")
