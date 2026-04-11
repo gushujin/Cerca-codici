@@ -19,7 +19,6 @@ brand_active = st.sidebar.selectbox("Produttore Attivo", ["SIEMENS", "ABB", "SCH
 st.sidebar.divider()
 st.sidebar.caption("Dati sincronizzati con Catalogo SENTRON 10/2019")
 
-
 # --- TITOLO ---
 st.title("🔌 Portale Tecnico Siemens SENTRON")
 st.write(f"Configurazione attiva: **{brand}** | Rif. Documenti: **33_CF, 5_CF e 5SV1**")
