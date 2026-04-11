@@ -3,6 +3,15 @@ import streamlit as st
 # Configurazione del Portale
 st.set_page_config(page_title="SENTRON Selector Pro V9", layout="wide", page_icon="⚡")
 
+# --- CSS PER LOOK PROFESSIONALE ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #f4f7f6; }
+    .main-box { background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .result-card { background-color: #005f73; color: white; padding: 20px; border-radius: 10px; text-align: center; }
+    </style>
+    """, unsafe_allow_html=True)
+
 # --- SIDEBAR: IMPOSTAZIONI ---
 st.sidebar.title("⚙️ Impostazioni")
 brand = st.sidebar.selectbox("Produttore", ["SIEMENS", "ABB", "Schneider"])
