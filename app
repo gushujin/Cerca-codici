@@ -1,31 +1,27 @@
 import streamlit as st
 
-# Titolo dell'applicazione
-st.title("Generatore di Codice Tecnico")
+# Impostazione pagina larga
+st.set_page_config(layout="wide")
 
-# Creazione di 3 colonne affiancate
+st.title("Generatore Codici Siemens")
+
+# Creazione delle 3 colonne
 col1, col2, col3 = st.columns(3)
 
-# Configurazione Colonna 1
+# Funzione per creare i blocchi (così non sbagliamo a scrivere 3 volte la stessa cosa)
+def crea_configurazione(id_colonna):
+    st.subheader(f"Configurazione {id_colonna}")
+    prod = st.selectbox(f"Produttore", ["Siemens", "Altro"], key=f"p{id_colonna}")
+    tipo = st.selectbox(f"Modello", ["S7-1200", "S7-1500", "ET200SP"], key=f"m{id_colonna}")
+    
+    if st.button(f"Genera Codice {id_colonna}", key=f"b{id_colonna}"):
+        st.success("Codice Generato:")
+        st.code(f"// Configurazione {prod}\n// Modello: {tipo}\nSTART_PLC();")
+
+# Riempiamo le colonne
 with col1:
-    st.header("Opzione 1")
-    produttore_1 = st.selectbox("Scegli Produttore", ["Produttore A", "Produttore B"], key="p1")
-    caratteristica_1 = st.selectbox("Caratteristica", ["Standard", "Premium", "Custom"], key="c1")
-    if st.button("Genera Codice 1"):
-        st.code(f"# Codice per {produttore_1}\n# Tipo: {caratteristica_1}")
-
-# Configurazione Colonna 2
+    crea_configurazione(1)
 with col2:
-    st.header("Opzione 2")
-    produttore_2 = st.selectbox("Scegli Produttore", ["Produttore A", "Produttore B"], key="p2")
-    caratteristica_2 = st.selectbox("Caratteristica", ["Standard", "Premium", "Custom"], key="c2")
-    if st.button("Genera Codice 2"):
-        st.code(f"# Codice per {produttore_2}\n# Tipo: {caratteristica_2}")
-
-# Configurazione Colonna 3
+    crea_configurazione(2)
 with col3:
-    st.header("Opzione 3")
-    produttore_3 = st.selectbox("Scegli Produttore", ["Produttore A", "Produttore B"], key="p3")
-    caratteristica_3 = st.selectbox("Caratteristica", ["Standard", "Premium", "Custom"], key="c3")
-    if st.button("Genera Codice 3"):
-        st.code(f"# Codice per {produttore_3}\n# Tipo: {caratteristica_3}")
+    crea_configurazione(3)
