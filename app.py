@@ -44,7 +44,7 @@ with col_params:
     if categoria == "Magnetotermici (5SL, 5SY, 5SP)":
         c1, c2 = st.columns(2)
         with c1:
-            pdi = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
+            pdi = st.selectbox("Potere Interruzione PDI", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
             poli = st.selectbox("Poli", ["1P", "1P+N (1UM)", "1P+N (2UM)", "2P", "3P", "3P+N", "4P"])
         with c2:
             amp = st.selectbox("Corrente (In)", ["06", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
