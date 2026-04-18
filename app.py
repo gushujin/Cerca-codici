@@ -1,31 +1,136 @@
-# --- 1. MAGNETOTERMICI STANDARD (Correzione IF) ---
-if categoria.startswith("Magnetotermici (5SL"):  # <--- CORRETTO
-    c1, c2 = st.columns(2)
-    with c1:
-        pdi = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
-        poli = st.selectbox("Poli", ["1P", "2P", "3P", "4P"]) # Semplificato per logica multibrand
-    with c2:
-        amp = st.selectbox("Corrente (In)", ["06", "10", "16", "20", "25", "32", "40", "50", "63"])
-        curva = st.radio("Curva", ["B", "C", "D"], horizontal=True)
+import streamlit as st
 
-    # --- LOGICA SCHNEIDER (Basata su catalogo Acti9) ---
-    if "Schneider" in brand:
-        # Mappatura Codici Parlanti Schneider
-        pdi_map = {"4.5 kA": "64", "6 kA": "74", "10 kA": "74", "15 kA": "84", "25 kA": "94"}
-        poli_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
+# Configurazione del Portale
+st.set_page_config(page_title="SENTRON Selector Pro V9", layout="wide", page_icon="⚡")
+
+# --- CSS PER LOOK PROFESSIONALE ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #f4f7f6; }
+    .main-box { background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .result-card { background-color: #005f73; color: white; padding: 20px; border-radius: 10px; text-align: center; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR: IMPOSTAZIONI DI SISTEMA ---
+st.sidebar.title("🛠️ System Settings")
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg", width=150)
+st.sidebar.title("Configuratore Multibrand")
+brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
+st.sidebar.divider()
+st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo Acti9 2024 e SENTRON 2019")
+
+# --- TITOLO ---
+st.title("🔌 Portale Tecnico Siemens SENTRON")
+st.write(f"Configurazione attiva: **{brand}**")
+
+# --- SELEZIONE CATEGORIA ---
+# Nota: La stringa deve corrispondere esattamente nell'if successivo
+categoria = st.selectbox("Seleziona Categoria Prodotto", [
+    "Magnetotermici (5SL, 5SY, 5SP)", 
+    "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)", 
+    "Differenziali Puri (5SV)", 
+    "Magnetotermici Scatolati (3VA)", 
+    "Accessori e AFDD"
+])
+
+st.divider()
+
+col_params, col_res = st.columns([2, 1])
+codice_final = "NON DEFINITO" # Variabile di fallback
+
+with col_params:
+    st.subheader("🛠️ Specifiche Tecniche")
+    
+    # --- 1. MAGNETOTERMICI STANDARD ---
+    if categoria == "Magnetotermici (5SL, 5SY, 5SP)":
+        c1, c2 = st.columns(2)
+        with c1:
+            pdi = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
+            poli = st.selectbox("Poli", ["1P", "2P", "3P", "4P"])
+        with c2:
+            amp = st.selectbox("Corrente (In)", ["06", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
+            curva = st.radio("Curva", ["B", "C", "D"], horizontal=True)
+
+        # --- LOGICA SIEMENS ---
+        if "SIEMENS" in brand:
+            pref = "5SL3" if "4.5" in pdi else "5SL6" if "6" in pdi else "5SL4" if "10" in pdi else "5SY7" if "15" in pdi else "5SY8"
+            p_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
+            codice_final = f"{pref}{p_map[poli]}{amp}-{curva[0]}{amp}"
+
+        # --- LOGICA ABB ---
+        elif "ABB" in brand:
+            pref_abb = "S201L" if "4.5" in pdi else "S201" if "6" in pdi else "S201M" if "10" in pdi else "S201P"
+            # Adatta il prefisso al numero di poli (es. S202 per 2P)
+            pref_poli = pref_abb[:3] + poli[0] + pref_abb[4:]
+            codice_final = f"{pref_poli}-{curva[0]}{int(amp)}"
+
+        # --- LOGICA SCHNEIDER (CODICE PARLANTE) ---
+        elif "Schneider" in brand:
+            # Chiave del codice: A9F + Serie(PDI) + Poli + Corrente
+            pdi_map = {"4.5 kA": "64", "6 kA": "74", "10 kA": "74", "15 kA": "84", "25 kA": "94"}
+            poli_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
+            codice_final = f"A9F{pdi_map[pdi]}{poli_map[poli]}{amp}"
+
+    # --- 2. MAGNETOTERMICI DIFFERENZIALI ---
+    elif categoria == "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)":
+        tipo_md = st.radio("Scegli Modello", ["Standard (2 Moduli - 5SU1)", "Compatto (1 Modulo - 5SV1)"], horizontal=True)
+        if tipo_md == "Compatto (1 Modulo - 5SV1)":
+            c1, c2 = st.columns(2)
+            with c1:
+                pdi_sv = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA"])
+                tipo_sv = st.radio("Classe", ["AC (Standard)", "A (Impulsiva)"])
+            with c2:
+                curva_sv = st.selectbox("Curva", ["B", "C"])
+                amp_sv = st.selectbox("Ampere", ["06", "10", "13", "16", "20", "25", "32"])
+            
+            p_code = "3" if "4.5" in pdi_sv else "6"
+            t_code = "3" if "AC" in tipo_sv else "6"
+            codice_final = f"5SV1{t_code}1{p_code}-{curva_sv}{amp_sv}"
+        else:
+            codice_final = "5SU1..."
+
+    # --- 3. DIFFERENZIALI PURI ---
+    elif categoria == "Differenziali Puri (5SV)":
+        c1, c2 = st.columns(2)
+        with c1:
+            sens = st.selectbox("Sensibilità (IΔn)", ["30 mA", "10 mA", "300 mA"])
+            amp_d = st.selectbox("Corrente (In)", ["25 A", "40 A", "63 A", "16 A"])
+        with c2:
+            poli_d = st.radio("Poli", ["1P+N", "3P+N"])
+            classe_d = st.selectbox("Classe", ["A", "AC", "F", "B"])
         
-        # Prefisso: A9F per magnetotermici
-        # Esempio: A9F + 74 (PDI) + 1 (Poli) + 16 (Amp)
-        codice_final = f"A9F{pdi_map[pdi]}{poli_map[poli]}{amp}"
+        s_map = {"30 mA": "3", "10 mA": "1", "300 mA": "6"}
+        p_map_d = {"1P+N": "1", "3P+N": "4"}
+        c_map = {"A": "6", "AC": "0", "F": "3", "B": "4"}
+        codice_final = f"5SV3{s_map[sens]}{p_map_d[poli_d]}{amp_d[:2]}-{c_map[classe_d]}"
 
-    # --- LOGICA SIEMENS ---
-    elif "SIEMENS" in brand:
-        pref = "5SL3" if "4.5" in pdi else "5SL6" if "6" in pdi else "5SL4" if "10" in pdi else "5SY7" if "15" in pdi else "5SY8"
-        p_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
-        codice_final = f"{pref}{p_map[poli]}{amp}-{curva[0]}{amp}"
+    # --- 4. MAGNETOTERMICI SCATOLATI ---
+    elif categoria == "Magnetotermici Scatolati (3VA)":
+        c1, c2 = st.columns(2)
+        with c1:
+            taglia = st.selectbox("Taglia (Frame)", ["3VA10 (100A)", "3VA11 (160A)", "3VA12 (250A)"])
+            pdi_va = st.selectbox("Potere Interruzione (415V)", ["25 kA (B)", "36 kA (C)", "55 kA (S)", "70 kA (M)"])
+        with c2:
+            poli_va = st.selectbox("Poli", ["3 Poli", "4 Poli"])
+            amp_va = st.selectbox("Corrente Nominale (In)", ["16", "25", "40", "63", "100", "160"])
+        
+        f_code = taglia[3:5]
+        p_va_code = pdi_va.split("(")[1][0]
+        po_code = "3" if "3" in poli_va else "4"
+        codice_final = f"3VA1{f_code}-{p_va_code}EE{po_code}2-0AA0"
 
-    # --- LOGICA ABB ---
-    elif "ABB" in brand:
-        pref_abb = "S200L" if "4.5" in pdi else "S200" if "6" in pdi else "S200M" if "10" in pdi else "S200P"
-        p_val = poli[0] # Prende il primo carattere (1, 2, 3, 4)
-        codice_final = f"{pref_abb}-{curva[0]}{int(amp)}"
+    else:
+        st.info("Configurazione in fase di aggiornamento.")
+        codice_final = "IN ELABORAZIONE"
+
+# --- VISUALIZZAZIONE RISULTATO (COLONNA DESTRA) ---
+with col_res:
+    st.subheader("📌 Risultato")
+    st.success(f"### `{codice_final}`")
+    st.info(f"Brand: **{brand}**")
+    st.caption("Verificare sempre sul catalogo ufficiale prima dell'ordine.")
+
+st.divider()
+st.markdown("### 📘 Note Elettrotecniche")
+st.write(f"Il potere di interruzione selezionato ({pdi if 'pdi' in locals() else 'N/A'}) è verificato secondo norma CEI EN 60947-2.")
