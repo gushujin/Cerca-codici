@@ -7,8 +7,8 @@ st.set_page_config(page_title="SENTRON Selector Pro V9", layout="wide", page_ico
 st.markdown("""
     <style>
     .stApp { background-color: #f4f7f6; }
-    .main-box { background-color: #ffffff; padding: 250px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .result-card { background-color: #015G73; color: white; padding: 20px; border-radius: 10px; text-align: center; }
+    .main-box { background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .result-card { background-color: #015F73; color: white; padding: 20px; border-radius: 10px; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
