@@ -18,18 +18,18 @@ st.sidebar.image("https://www.comoliferrari.it/theme/cf-c4.5/images/new/logo20b.
 st.sidebar.title("Configuratore Multibrand")
 brand = st.sidebar.selectbox("Seleziona il Brand", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
 st.sidebar.divider()
-st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo SENTRON 10/2019")
+st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo xxxxxxx")
 
 # --- TITOLO ---
-st.title("🔌 Portale Tecnico Siemens SENTRON")
-st.write(f"Configurazione attiva: **{brand}** | Rif. Documenti: **33_CF, 5_CF e 5SV1**")
+st.title("🔌 Portale Tecnico xxxxxxxxx")
+st.write(f"Configurazione attiva: **{brand}** | Rif. Documenti: **xxxxxxxxxxxxxxxxxxxxxxxxx**")
 
 # --- SELEZIONE CATEGORIA ---
 categoria = st.selectbox("Seleziona Categoria Prodotto", [
-    "Magnetotermici (5SL, 5SY, 5SP)", 
-    "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)", 
-    "Differenziali Puri (5SV)", 
-    "Magnetotermici Scatolati (3VA)", 
+    "Magnetotermici (Serie: 5SL, 5SY, 5SP, Resi9, iC40, iC60, C60H-DC, C60PV-DC,C120)", 
+    "Magnetotermici Differenziali (Serie: 5SU1, 5SV1 COMPATTI)", 
+    "Differenziali Puri (Serie: 5SV)", 
+    "Magnetotermici Scatolati (Serie: 3VA)", 
     "Accessori e AFDD"
 ])
 
