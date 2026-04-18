@@ -8,28 +8,28 @@ st.markdown("""
     <style>
     .stApp { background-color: #f4f7f6; }
     .main-box { background-color: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .result-card { background-color: #015F73; color: white; padding: 20px; border-radius: 10px; text-align: center; }
+    .result-card { background-color: #005f73; color: white; padding: 20px; border-radius: 10px; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR: IMPOSTAZIONI DI SISTEMA ---
-st.sidebar.title("🛠️ Inserimento Parametri ")
-st.sidebar.image("https://www.comoliferrari.it/theme/cf-c4.5/images/new/logo20b.png", width=1500)
+st.sidebar.title("🛠️ System Settings")
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg", width=150)
 st.sidebar.title("Configuratore Multibrand")
-brand = st.sidebar.selectbox("Seleziona il Brand", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
+brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
 st.sidebar.divider()
-st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo xxxxxxx")
+st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo SENTRON 10/2019")
 
 # --- TITOLO ---
-st.title("🔌 Portale Tecnico xxxxxxxxx")
-st.write(f"Configurazione attiva: **{brand}** | Documenti: **xxxxxxxxxxxxxxxxxxxxxxxxx**")
+st.title("🔌 Portale Tecnico Siemens SENTRON")
+st.write(f"Configurazione attiva: **{brand}** | Rif. Documenti: **33_CF, 5_CF e 5SV1**")
 
 # --- SELEZIONE CATEGORIA ---
 categoria = st.selectbox("Seleziona Categoria Prodotto", [
-    "Magnetotermici (Serie: 5SL, 5SY, 5SP, Resi9, iC40, iC60, C60H-DC, C60PV-DC,C120)", 
-    "Magnetotermici Differenziali (Serie: 5SU1, 5SV1 COMPATTI)", 
-    "Differenziali Puri (Serie: 5SV)", 
-    "Magnetotermici Scatolati (Serie: 3VA)", 
+    "Magnetotermici (5SL, 5SY, 5SP)", 
+    "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)", 
+    "Differenziali Puri (5SV)", 
+    "Magnetotermici Scatolati (3VA)", 
     "Accessori e AFDD"
 ])
 
@@ -41,7 +41,7 @@ with col_params:
     st.subheader("🛠️ Specifiche Tecniche")
     
     # --- 1. MAGNETOTERMICI STANDARD ---
-   if categoria == "Magnetotermici (5SL, 5SY, 5SP)":
+    if categoria == "Magnetotermici (5SL, 5SY, 5SP)":
         c1, c2 = st.columns(2)
         with c1:
             pdi = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
