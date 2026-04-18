@@ -41,14 +41,14 @@ with col_params:
     st.subheader("🛠️ Specifiche Tecniche")
     
     # --- 1. MAGNETOTERMICI STANDARD ---
-    if categoria == "Magnetotermici (5SL, 5SY, 5SP)":
+   if categoria.startswith("Magnetotermici (Serie: 5SL"):
         c1, c2 = st.columns(2)
         with c1:
-            pdi = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
+            pdi = st.selectbox("Potere Interruzione (PDI)", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
             poli = st.selectbox("Poli", ["1P", "1P+N (1UM)", "1P+N (2UM)", "2P", "3P", "3P+N", "4P"])
         with c2:
-            amp = st.selectbox("Corrente (In)", ["06", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
-            curva = st.radio("Curva", ["B", "C", "D"], horizontal=True)
+            amp = st.selectbox("Corrente Nominale (In)", ["06", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
+            curva = st.radio("Curva di Intervento", ["B", "C", "D"], horizontal=True)
         
         pref = "5SL3" if "4.5" in pdi else "5SL6" if "6" in pdi else "5SY4" if "10" in pdi else "5SY7" if "15" in pdi else "5SY8"
         p_map = {"1P": "1", "1P+N (1UM)": "0", "1P+N (2UM)": "5", "2P": "2", "3P": "3", "3P+N": "6", "4P": "4"}
