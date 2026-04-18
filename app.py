@@ -14,7 +14,7 @@ st.markdown("""
 
 # --- SIDEBAR: IMPOSTAZIONI DI SISTEMA ---
 st.sidebar.title("🛠️ Inserimento Parametri ")
-st.sidebar.image("https://www.comoliferrari.it/theme/cf-c4.5/images/new/logo20b.png", width=150)
+st.sidebar.image("https://www.comoliferrari.it/theme/cf-c4.5/images/new/logo20b.png", width=1500)
 st.sidebar.title("Configuratore Multibrand")
 brand = st.sidebar.selectbox("Seleziona il Brand", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
 st.sidebar.divider()
