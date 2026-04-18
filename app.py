@@ -14,7 +14,7 @@ st.markdown("""
 
 # --- SIDEBAR: IMPOSTAZIONI DI SISTEMA ---
 st.sidebar.title("🛠️ Inserimento Parametri ")
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/0/00/ABB_logo.svg", width=150)
+st.sidebar.image("https://www.facebook.com/ComoliFerrari/", width=150)
 st.sidebar.title("Configuratore Multibrand")
 brand = st.sidebar.selectbox("Seleziona il Brand", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
 st.sidebar.divider()
