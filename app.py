@@ -22,7 +22,7 @@ st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo xxxxxxx")
 
 # --- TITOLO ---
 st.title("🔌 Portale Tecnico xxxxxxxxx")
-st.write(f"Configurazione attiva: **{brand}** | Rif. Documenti: **xxxxxxxxxxxxxxxxxxxxxxxxx**")
+st.write(f"Configurazione attiva: **{brand}** | Documenti: **xxxxxxxxxxxxxxxxxxxxxxxxx**")
 
 # --- SELEZIONE CATEGORIA ---
 categoria = st.selectbox("Seleziona Categoria Prodotto", [
