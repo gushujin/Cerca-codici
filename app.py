@@ -40,20 +40,46 @@ col_params, col_res = st.columns([2, 1])
 with col_params:
     st.subheader("🛠️ Specifiche Tecniche")
     
-    # --- 1. MAGNETOTERMICI STANDARD ---
-    if categoria == "Magnetotermici (5SL, 5SY, 5SP)":
+   # --- 1. MAGNETOTERMICI STANDARD (MULTIBRAND) ---
+    if categoria.startswith("Magnetotermici (Serie: 5SL"):
         c1, c2 = st.columns(2)
         with c1:
-            pdi = st.selectbox("Potere Interruzione PDI", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
+            pdi = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
             poli = st.selectbox("Poli", ["1P", "1P+N (1UM)", "1P+N (2UM)", "2P", "3P", "3P+N", "4P"])
         with c2:
             amp = st.selectbox("Corrente (In)", ["06", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
             curva = st.radio("Curva", ["B", "C", "D"], horizontal=True)
-        
-        pref = "5SL3" if "4.5" in pdi else "5SL6" if "6" in pdi else "5SY4" if "10" in pdi else "5SY7" if "15" in pdi else "5SY8"
-        p_map = {"1P": "1", "1P+N (1UM)": "0", "1P+N (2UM)": "5", "2P": "2", "3P": "3", "3P+N": "6", "4P": "4"}
-        codice_final = f"{pref}{p_map[poli]}{amp.replace(',','')}-{curva[0]}{amp}"
 
+        # --- LOGICA DI DEFINIZIONE PREFISSI PER BRAND ---
+        if "SIEMENS" in brand:
+            pref = "5SL3" if "4.5" in pdi else "5SL6" if "6" in pdi else "5SL4" if "10" in pdi else "5SY7" if "15" in pdi else "5SY8"
+            p_map = {"1P": "1", "1P+N (1UM)": "0", "1P+N (2UM)": "5", "2P": "2", "3P": "3", "3P+N": "6", "4P": "4"}
+            # Costruzione MLFB Siemens: Prefisso + Polo + Amp - Curva + Amp
+            codice_final = f"{pref}{p_map[poli]}{amp}-{curva[0]}{amp}"
+
+        elif "ABB" in brand:
+            # Esempio: S201-C16 (S200 è la serie standard 6kA)
+            pref_abb = "S201L" if "4.5" in pdi else "S200" if "6" in pdi else "S200M" if "10" in pdi else "S200P"
+            p_count = poli.split("P")[0] # Estrae il numero di poli
+            codice_final = f"{pref_abb}-{curva[0]}{int(amp)}" # ABB non usa lo 0 davanti (es. C6, non C06)
+
+        elif "Schneider" in brand:
+            # Esempio: A9F74116 (iC60N) o R9P35616 (Resi9)
+            if "6 kA" in pdi:
+                pref_sn = "R9P" # Serie Resi9 per il residenziale
+            else:
+                pref_sn = "A9F" # Serie Acti9 iC60 per il terziario/industria
+            codice_final = f"{pref_sn} [LOGICA SPECIFICA SCHNEIDER]"
+
+# --- VISUALIZZAZIONE DATI DI TARGA ---
+        st.markdown("---")
+        st.markdown(f"#### 📝 Specifiche Tecniche {brand.split(' ')[0]}")
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Serie", pref if "SIEMENS" in brand else "Equiv.")
+        m2.metric("PDI", pdi)
+        m3.metric("Poli", poli)
+        m4.metric("In", f"{int(amp)}A")
+    
     # --- 2. MAGNETOTERMICI DIFFERENZIALI (5SU1, 5SV1) ---
     elif categoria == "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)":
         tipo_md = st.radio("Scegli Modello", ["Standard (2 Moduli - 5SU1)", "Compatto (1 Modulo - 5SV1)"], horizontal=True)
