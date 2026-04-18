@@ -13,7 +13,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR: IMPOSTAZIONI DI SISTEMA ---
-st.sidebar.title("🛠️ System Settings")
+st.sidebar.title("🛠️ Inserimento Parametri ")
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg", width=150)
 st.sidebar.title("Configuratore Multibrand")
 brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
