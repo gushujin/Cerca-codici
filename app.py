@@ -63,7 +63,7 @@ with col_params:
             amp_val = amp.split("(")[1].replace(")", "")
             curva_val = curva.split("(")[1].replace(")", "")
 
-  # --- 3. LOGICA SCHNEIDER ---
+  # --- LOGICA SCHNEIDER ---
 elif "Schneider" in brand:
     # Segue la tua tabella: 64, 74, 84, 94
     pdi_sch = "64" if "6" in pdi else "74" if "10" in pdi else "84"
