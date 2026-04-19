@@ -75,8 +75,8 @@ with col_params:
             
             # Visualizzazione a box per le posizioni principali
             pos_data = [
-                ("1-2", "5S"), ("3", serie_val), ("4-5", pdi_val), 
-                ("6", poli_val), ("7", curva_val), ("8-10", amp_val), ("11-12", "KK")
+                ("1-2", "5S"), ("3", serie_val), ("4", pdi_val), 
+                ("5", poli_val), ("6-7", amp_val), ("8", curva_val), ("9-10", "KK")
             ]
             p_cols = st.columns(len(pos_data))
             for idx, (label, val) in enumerate(pos_data):
