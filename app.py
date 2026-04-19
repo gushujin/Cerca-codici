@@ -83,8 +83,18 @@ with col_params:
             
             st.markdown("---")
             st.write("🔍 **Analisi Posizioni Codice Schneider (Acti9)**")
-            pos_data = [("1-3", "A9F"), ("4-5", pdi_sch), ("6", poli_val), ("7-8", amp_val)]
-            p_cols = st.columns(len(pos_data))
+            
+            pos_data = [
+    ("1-3", "A9F"),      # FAMIGLIA (Acti9)
+    ("4-5", pdi_sch),    # PERFORMANCE (Potere Interruzione)
+    ("6", poli_val),     # NUMERO POLI
+    ("7-8", amp_val)     # TAGLIA (Amperaggio)
+]
+
+
+
+
+            
             for i, (label, val) in enumerate(pos_data):
                 with p_cols[i]:
                     st.markdown(f"""<div class="pos-box"><div class="pos-label">POS.{label}</div><div class="pos-val">{val}</div></div>""", unsafe_allow_html=True)
