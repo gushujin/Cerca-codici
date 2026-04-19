@@ -60,9 +60,9 @@ with col_params:
             # Estrazione valori tra parentesi dalle selectbox
             pdi_val = pdi.split("(")[1][0]
             poli_val = poli.split("(")[1][0]
-            curva_val = curva.split("(")[1].replace(")", "")
             amp_val = amp.split("(")[1].replace(")", "")
-            
+            curva_val = curva.split("(")[1].replace(")", "")
+                        
             # Costruzione MLFB Siemens (Esempio: 5S Y 6 1 7 16 KK)
             # Nota: La serie (POS.3) dipende dal PDI nella tua tabella
             serie_val = "L" if "4.5" in pdi or "6" in pdi else "Y"
