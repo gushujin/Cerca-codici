@@ -67,7 +67,7 @@ with col_params:
             # Nota: La serie (POS.3) dipende dal PDI nella tua tabella
             serie_val = "L" if "4.5" in pdi or "6" in pdi else "Y"
             
-            codice_final = f"5S{serie_val}{pdi_val}{poli_val}{curva_val}{amp_val}KK"
+            codice_final = f"5S{serie_val}{pdi_val}{poli_val}{amp_val}{curva_val}KK"
 
             # --- ANALISI POSIZIONI ---
             st.markdown("---")
