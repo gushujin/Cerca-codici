@@ -46,16 +46,16 @@ with col_params:
     if categoria == "Magnetotermici (MCB)":
         c1, c2 = st.columns(2)
         with c1:
-            # POS.4-5: PDI
+            # POS.4: PDI
             pdi = st.selectbox("Potere Interruzione (PDI)", ["4.5 kA (3)", "6 kA (6)", "10 kA (4)", "15 kA (7)", "70 kA (8)"])
-            # POS.6: POLI
+            # POS.5: POLI
             poli = st.selectbox("Poli", ["1P (1)", "2P (2)", "3P (3)", "4P (4)", "1P+N 2UM (5)", "1P+N 1UM (0)"])
         with c2:
-            # POS.7: CURVA
-            curva = st.selectbox("Curva", ["A (5)", "B (6)", "C (7)", "D (8)", "Solo Mag (8BB08)"])
-            # POS.8-10: AMPERE
+            # POS.6-7: AMPERE
             amp = st.selectbox("Corrente (In)", ["6A (06)", "10A (10)", "16A (16)", "40A (40)", "63A (63)"])
-
+            # POS.8: CURVA
+            curva = st.selectbox("Curva", ["A (5)", "B (6)", "C (7)", "D (8)", "Solo Mag (8BB08)"])
+           
         if "SIEMENS" in brand:
             # Estrazione valori tra parentesi dalle selectbox
             pdi_val = pdi.split("(")[1][0]
