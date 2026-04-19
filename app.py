@@ -16,21 +16,21 @@ st.markdown("""
 st.sidebar.title("🛠️ System Settings")
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg", width=150)
 st.sidebar.title("Configuratore Multibrand")
-brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS (Original)", "ABB (Equivalent)", "Schneider (Equivalent)"])
+brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "ABB", "Schneider
 st.sidebar.divider()
 st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo Acti9 2024 e SENTRON 2019")
 
 # --- TITOLO ---
-st.title("🔌 Portale Tecnico Siemens SENTRON")
+st.title("🔌 Portale Tecnico")
 st.write(f"Configurazione attiva: **{brand}**")
 
 # --- SELEZIONE CATEGORIA ---
 # Nota: La stringa deve corrispondere esattamente nell'if successivo
 categoria = st.selectbox("Seleziona Categoria Prodotto", [
-    "Magnetotermici (5SL, 5SY, 5SP)", 
-    "Magnetotermici Differenziali (5SU1, 5SV1 COMPATTI)", 
-    "Differenziali Puri (5SV)", 
-    "Magnetotermici Scatolati (3VA)", 
+    "Magnetotermici:", 
+    "Magnetotermici Differenziali:", 
+    "Differenziali Puri:", 
+    "Magnetotermici Scatolati:", 
     "Accessori e AFDD"
 ])
 
