@@ -63,13 +63,20 @@ with col_params:
             amp_val = amp.split("(")[1].replace(")", "")
             curva_val = curva.split("(")[1].replace(")", "")
 
-    # --- LOGICA ABB ---
-                    
-            # Costruzione MLFB Siemens (Esempio: 5S Y 6 1 7 16 KK)
-            # Nota: La serie (POS.3) dipende dal PDI nella tua tabella
-            serie_val = "L" if "4.5" in pdi or "6" in pdi else "Y"
-            
-            codice_final = f"5S{serie_val}{pdi_val}{poli_val}{amp_val}{curva_val}KK"
+   elif "Schneider" in brand:
+    # Esempio per Acti9 iC60N
+    pref_sch = "A9F"
+    
+    # Mappatura PDI (esempio semplificato)
+    pdi_map = {"6 kA": "3", "10 kA": "4", "25 kA": "5"}
+    p_val = pdi_map.get(pdi.split(" ")[0], "4")
+    
+    # Poli (estrazione numerica)
+    poli_val = poli.split("(")[1][0]
+    
+    # Costruzione: A9F + Serie(5) + PDI + Poli + Ampere
+    # Nota: Schneider richiede solitamente 5 cifre dopo A9F
+    codice_final = f"{pref_sch}5{p_val}{poli_val}{amp_val}"
 
             # --- ANALISI POSIZIONI ---
             st.markdown("---")
