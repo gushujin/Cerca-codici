@@ -62,7 +62,27 @@ with col_params:
             poli_val = poli.split("(")[1][0]
             amp_val = amp.split("(")[1].replace(")", "")
             curva_val = curva.split("(")[1].replace(")", "")
-                        
+
+# --- LOGICA ABB ---
+        elif "ABB" in brand:
+            # Estrazione specifica per ABB (se le etichette sono diverse)
+            # Supponendo che ABB usi S200 come base
+            pref_abb = "S200"
+            if "4.5" in pdi: pref_abb = "S200L"
+            elif "10" in pdi: pref_abb = "S200M"
+            
+            # ABB solitamente mette la Curva PRIMA dell'Amperaggio (es: C16)
+            # curva_val sarà 'C', amp_val sarà '16'
+            codice_final = f"{pref_abb}-{curva_label[0]}{int(amp_val)}"
+
+            # Analisi Posizioni ABB
+            pos_data = [
+                ("1-4", pref_abb),
+                ("5", "-"),
+                ("6", curva_label[0]),
+                ("7-8", int(amp_val))
+            ]
+            
             # Costruzione MLFB Siemens (Esempio: 5S Y 6 1 7 16 KK)
             # Nota: La serie (POS.3) dipende dal PDI nella tua tabella
             serie_val = "L" if "4.5" in pdi or "6" in pdi else "Y"
