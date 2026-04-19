@@ -16,7 +16,7 @@ st.markdown("""
 st.sidebar.title("🛠️ System Settings")
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-logo.svg", width=150)
 st.sidebar.title("Configuratore Multibrand")
-brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "ABB", "Schneider
+brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "ABB", "Schneider"]
 st.sidebar.divider()
 st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo Acti9 2024 e SENTRON 2019")
 
