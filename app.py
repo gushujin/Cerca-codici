@@ -63,22 +63,12 @@ with col_params:
             amp_val = amp.split("(")[1].replace(")", "")
             curva_val = curva.split("(")[1].replace(")", "")
 
-   elif "Schneider" in brand:
-    # Prefisso fisso Acti9
-    pref_sch = "A9F"
-    
-    # Mappatura PDI dalla tua tabella comparativa (image_1b05f8)
-    if "6 kA" in pdi: pdi_val = "64"     # Residenziale
-    elif "10 kA" in pdi: pdi_val = "74"  # Standard
-    elif "15 kA" in pdi: pdi_val = "84"  # Avanzato
-    else: pdi_val = "94"                # Industriale
-
-    # Estrazione Poli (Pos. 6) e Ampere (Pos. 7-8)
-    poli_val = poli.split("(")[1][0] 
-    amp_val = amp.split("(")[1].replace(")","")
-    
-    # Costruzione codice finale: A9F + PDI_Code + Poli + Amp
-    codice_final = f"{pref_sch}{pdi_val}{poli_val}{amp_val}"
+  # --- 3. LOGICA SCHNEIDER ---
+elif "Schneider" in brand:
+    # Segue la tua tabella: 64, 74, 84, 94
+    pdi_sch = "64" if "6" in pdi else "74" if "10" in pdi else "84"
+    # Esempio: A9F74116
+    codice_final = f"A9F{pdi_sch}{poli_val}{amp_val}"
 
     # --- ANALISI POSIZIONI SCHNEIDER ---
     st.markdown("---")
