@@ -64,19 +64,29 @@ with col_params:
             curva_val = curva.split("(")[1].replace(")", "")
 
    elif "Schneider" in brand:
-    # Esempio per Acti9 iC60N
+    # Prefisso base per Acti9
     pref_sch = "A9F"
     
-    # Mappatura PDI (esempio semplificato)
-    pdi_map = {"6 kA": "3", "10 kA": "4", "25 kA": "5"}
-    p_val = pdi_map.get(pdi.split(" ")[0], "4")
+    # Mappatura PDI basata sulla tua tabella (Schneider: 64, 74, 84, 94)
+    if "4.5" in pdi or "6" in pdi: pdi_val = "64"
+    elif "10" in pdi: pdi_val = "74"
+    elif "15" in pdi: pdi_val = "84"
+    else: pdi_val = "94"
+
+    # Estrazione Poli e Ampere
+    poli_val = poli.split("(")[1][0] # Es: "1" da "1P (1)"
+    amp_val = amp.split("(")[1].replace(")", "") # Es: "16" da "16A (16)"
     
-    # Poli (estrazione numerica)
-    poli_val = poli.split("(")[1][0]
-    
-    # Costruzione: A9F + Serie(5) + PDI + Poli + Ampere
-    # Nota: Schneider richiede solitamente 5 cifre dopo A9F
-    codice_final = f"{pref_sch}5{p_val}{poli_val}{amp_val}"
+    # Costruzione codice Schneider: A9F + PDI_Code + Poli + Amp
+    codice_final = f"{pref_sch}{pdi_val}{poli_val}{amp_val}"
+
+    # --- ANALISI POSIZIONI SCHNEIDER ---
+    pos_data = [
+        ("1-3", "A9F"), 
+        ("4-5", pdi_val), 
+        ("6", poli_val), 
+        ("7-8", amp_val)
+    ]
 
             # --- ANALISI POSIZIONI ---
             st.markdown("---")
