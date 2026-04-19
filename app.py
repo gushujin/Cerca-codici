@@ -42,73 +42,60 @@ with col_params:
     st.subheader("🛠️ Specifiche Tecniche")
     codice_final = "N/D"
     
-    # --- 1. MAGNETOTERMICI (MCB) - LOGICA TABELLE POS ---
+    # --- 1. MAGNETOTERMICI (MCB) ---
     if categoria == "Magnetotermici (MCB)":
         c1, c2 = st.columns(2)
         with c1:
-            # POS.4: PDI
             pdi = st.selectbox("Potere Interruzione (PDI)", ["4.5 kA (3)", "6 kA (6)", "10 kA (4)", "15 kA (7)", "70 kA (8)"])
-            # POS.5: POLI
             poli = st.selectbox("Poli", ["1P (1)", "2P (2)", "3P (3)", "4P (4)", "1P+N 2UM (5)", "1P+N 1UM (0)"])
         with c2:
-            # POS.6-7: AMPERE
             amp = st.selectbox("Corrente (In)", ["6A (06)", "10A (10)", "16A (16)", "40A (40)", "63A (63)"])
-            # POS.8: CURVA
-            curva = st.selectbox("Curva", ["A (5)", "B (6)", "C (7)", "D (8)", "Solo Mag (8BB08)"])
-           
-        if "SIEMENS" in brand:
-            # Estrazione valori tra parentesi dalle selectbox
-            pdi_val = pdi.split("(")[1][0]
-            poli_val = poli.split("(")[1][0]
-            amp_val = amp.split("(")[1].replace(")", "")
-            curva_val = curva.split("(")[1].replace(")", "")
-
-    # --- ANALISI POSIZIONI SCHNEIDER ---
-    st.markdown("---")
-    st.write("🔍 **Analisi Posizioni Codice Schneider (Acti9)**")
-    pos_data = [
-        ("1-3", "A9F"), 
-        ("4-5", pdi_val), 
-        ("6", poli_val), 
-        ("7-8", amp_val)
-    ]
-    
-    # Generazione box grafici
-    p_cols = st.columns(len(pos_data))
-    for i, (label, val) in enumerate(pos_data):
-        with p_cols[i]:
-            st.markdown(f"""<div class="pos-box">
-                <div class="pos-label">POS.{label}</div>
-                <div class="pos-val">{val}</div>
-            </div>""", unsafe_allow_html=True)
-
-    # --- ANALISI POSIZIONI SCHNEIDER ---
-    pos_data = [
-        ("1-3", "A9F"), 
-        ("4-5", pdi_val), 
-        ("6", poli_val), 
-        ("7-8", amp_val)
-    ]
-
-            # --- ANALISI POSIZIONI ---
-            st.markdown("---")
-            st.write("🔍 **Analisi Posizioni Codice MLFB (Tabella POS.1-12)**")
+            curva = st.selectbox("Curva", ["A (5)", "B (6)", "C (7)", "D (8)"])
             
-            # Visualizzazione a box per le posizioni principali
+        # Variabili di estrazione comuni
+        pdi_label = pdi.split(" ")[0]
+        pdi_val_siemens = pdi.split("(")[1][0]
+        poli_val = poli.split("(")[1][0]
+        amp_val = amp.split("(")[1].replace(")", "")
+        curva_val = curva.split("(")[1].replace(")", "")
+
+        # --- LOGICA SIEMENS ---
+        if "SIEMENS" in brand:
+            serie_val = "L" if "4.5" in pdi or "6" in pdi else "Y"
+            codice_final = f"5S{serie_val}{pdi_val_siemens}{poli_val}{amp_val}-{curva_val}{amp_val}"
+            
+            st.markdown("---")
+            st.write("🔍 **Analisi Posizioni Codice MLFB (Siemens)**")
             pos_data = [
-                ("1-2", "5S"), ("3", serie_val), ("4", pdi_val), 
-                ("5", poli_val), ("6-7", amp_val), ("8", curva_val), ("9-10", "KK")
+                ("1-2", "5S"), ("3", serie_val), ("4", pdi_val_siemens), 
+                ("5", poli_val), ("6-7", amp_val), ("8", "-"), ("10", curva_val), ("11-12", amp_val)
             ]
             p_cols = st.columns(len(pos_data))
-            for idx, (label, val) in enumerate(pos_data):
-                with p_cols[idx]:
+            for i, (label, val) in enumerate(pos_data):
+                with p_cols[i]:
                     st.markdown(f"""<div class="pos-box"><div class="pos-label">POS.{label}</div><div class="pos-val">{val}</div></div>""", unsafe_allow_html=True)
-        else:
-            codice_final = f"EQUIV-{brand[:3]}-{amp.split(' ')[0]}"
 
-    # --- 2. ALTRE CATEGORIE (PLACEHOLDER) ---
+        # --- LOGICA SCHNEIDER ---
+        elif "Schneider" in brand:
+            # Mappatura PDI per Schneider basata sulla tua tabella comparativa
+            pdi_sch = "64" if "6" in pdi else "74" if "10" in pdi else "84" if "15" in pdi else "94"
+            codice_final = f"A9F{pdi_sch}{poli_val}{amp_val}"
+            
+            st.markdown("---")
+            st.write("🔍 **Analisi Posizioni Codice Schneider (Acti9)**")
+            pos_data = [("1-3", "A9F"), ("4-5", pdi_sch), ("6", poli_val), ("7-8", amp_val)]
+            p_cols = st.columns(len(pos_data))
+            for i, (label, val) in enumerate(pos_data):
+                with p_cols[i]:
+                    st.markdown(f"""<div class="pos-box"><div class="pos-label">POS.{label}</div><div class="pos-val">{val}</div></div>""", unsafe_allow_html=True)
+        
+        else:
+            codice_final = f"EQUIV-{brand[:3]}-{amp_val}"
+
+    # --- 2. ALTRE CATEGORIE ---
     elif categoria == "Differenziali Puri (RCCB)":
         codice_final = "5SV3..."
+    
     else:
         st.info("Logica in fase di caricamento per questa categoria.")
 
@@ -128,4 +115,4 @@ with col_res:
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
-st.caption("Strumento basato su specifiche tecniche Siemens SENTRON. Verificare sempre sui cataloghi ufficiali.")
+st.caption("Strumento basato su specifiche tecniche Siemens SENTRON e Schneider Acti9. Verificare sempre sui cataloghi ufficiali.")
