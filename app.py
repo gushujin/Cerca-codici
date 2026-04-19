@@ -64,21 +64,40 @@ with col_params:
             curva_val = curva.split("(")[1].replace(")", "")
 
    elif "Schneider" in brand:
-    # Prefisso base per Acti9
+    # Prefisso fisso Acti9
     pref_sch = "A9F"
     
-    # Mappatura PDI basata sulla tua tabella (Schneider: 64, 74, 84, 94)
-    if "4.5" in pdi or "6" in pdi: pdi_val = "64"
-    elif "10" in pdi: pdi_val = "74"
-    elif "15" in pdi: pdi_val = "84"
-    else: pdi_val = "94"
+    # Mappatura PDI dalla tua tabella comparativa (image_1b05f8)
+    if "6 kA" in pdi: pdi_val = "64"     # Residenziale
+    elif "10 kA" in pdi: pdi_val = "74"  # Standard
+    elif "15 kA" in pdi: pdi_val = "84"  # Avanzato
+    else: pdi_val = "94"                # Industriale
 
-    # Estrazione Poli e Ampere
-    poli_val = poli.split("(")[1][0] # Es: "1" da "1P (1)"
-    amp_val = amp.split("(")[1].replace(")", "") # Es: "16" da "16A (16)"
+    # Estrazione Poli (Pos. 6) e Ampere (Pos. 7-8)
+    poli_val = poli.split("(")[1][0] 
+    amp_val = amp.split("(")[1].replace(")","")
     
-    # Costruzione codice Schneider: A9F + PDI_Code + Poli + Amp
+    # Costruzione codice finale: A9F + PDI_Code + Poli + Amp
     codice_final = f"{pref_sch}{pdi_val}{poli_val}{amp_val}"
+
+    # --- ANALISI POSIZIONI SCHNEIDER ---
+    st.markdown("---")
+    st.write("🔍 **Analisi Posizioni Codice Schneider (Acti9)**")
+    pos_data = [
+        ("1-3", "A9F"), 
+        ("4-5", pdi_val), 
+        ("6", poli_val), 
+        ("7-8", amp_val)
+    ]
+    
+    # Generazione box grafici
+    p_cols = st.columns(len(pos_data))
+    for i, (label, val) in enumerate(pos_data):
+        with p_cols[i]:
+            st.markdown(f"""<div class="pos-box">
+                <div class="pos-label">POS.{label}</div>
+                <div class="pos-val">{val}</div>
+            </div>""", unsafe_allow_html=True)
 
     # --- ANALISI POSIZIONI SCHNEIDER ---
     pos_data = [
