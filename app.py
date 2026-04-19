@@ -18,7 +18,7 @@ st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/5f/Siemens-lo
 st.sidebar.title("Configuratore Multibrand")
 brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "ABB", "Schneider"])
 st.sidebar.divider()
-st.sidebar.markdown("### Supporto Tecnico\nBasato su Catalogo Acti9 2024 e SENTRON 2019")
+st.sidebar.markdown("### Supporto Tecnico")
 
 # --- TITOLO ---
 st.title("🔌 Portale Tecnico")
@@ -42,15 +42,54 @@ codice_final = "NON DEFINITO" # Variabile di fallback
 with col_params:
     st.subheader("🛠️ Specifiche Tecniche")
     
-    # --- 1. MAGNETOTERMICI STANDARD ---
-    if categoria == "Magnetotermici (5SL, 5SY, 5SP)":
-        c1, c2 = st.columns(2)
-        with c1:
-            pdi = st.selectbox("Potere Interruzione", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
-            poli = st.selectbox("Poli", ["1P", "2P", "3P", "4P"])
-        with c2:
-            amp = st.selectbox("Corrente (In)", ["06", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
-            curva = st.radio("Curva", ["B", "C", "D"], horizontal=True)
+    # --- 1. MAGNETOTERMICI STANDARD (LOGICA AGGIORNATA SIEMENS) ---
+if categoria.startswith("Magnetotermici (Serie: 5SL"):
+    c1, c2 = st.columns(2)
+    with c1:
+        pdi = st.selectbox("Potere Interruzione (PDI)", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
+        # Mappatura Poli secondo Allegato: 5ª cifra del codice
+        poli_label = st.selectbox("Poli", ["1P", "1P+N (1UM)", "1P+N (2UM)", "2P", "3P", "3P+N", "4P"])
+        p_map = {"1P": "1", "1P+N (1UM)": "0", "1P+N (2UM)": "5", "2P": "2", "3P": "3", "3P+N": "6", "4P": "4"}
+        
+    with c2:
+        amp = st.selectbox("Corrente Nominale (In)", ["0,3", "0,5", "1", "1,6", "2", "3", "4", "6", "8", "10", "13", "16", "20", "25", "32", "40", "50", "63"])
+        curva_label = st.radio("Curva di Intervento", ["B", "C", "D"], horizontal=True)
+        # Mappatura Curva secondo Allegato: 7.5 dopo il trattino
+        # B=5, C=7, D=8
+        c_map = {"B": "5", "C": "7", "D": "8"}
+
+    # --- LOGICA DI COSTRUZIONE CODICE (BRAND DRIVEN) ---
+    if "SIEMENS" in brand:
+        # 1. Definizione Prefisso (Serie) basato su PDI
+        if "4.5" in pdi: pref = "5SL3"
+        elif "6" in pdi: pref = "5SL6"
+        elif "10" in pdi: pref = "5SL4"
+        elif "15" in pdi: pref = "5SY7"
+        else: pref = "5SY8"
+
+        # 2. Pulizia valore Ampere (toglie la virgola per il codice)
+        amp_code = amp.replace(",", "")
+        if len(amp_code) == 1: amp_code = "0" + amp_code # Gestisce valori singoli come 6A -> 06
+
+        # 3. Composizione Finale: Prefisso + Polo + Amp + - + Curva + Amp
+        # Esempio: 5SL6 + 5 (1P+N) + 16 + - + 7 (Curva C) + 16 = 5SL6516-7
+        codice_final = f"{pref}{p_map[poli_label]}{amp_code}-{c_map[curva_label]}{amp_code}"
+        
+    else:
+        # Placeholder per ABB/Schneider
+        codice_final = f"EQUIV-{brand[:3]}-{amp}"
+
+    # --- BLOCCO CARATTERISTICHE (VISUALIZZAZIONE) ---
+    st.markdown('<div class="main-box">', unsafe_allow_html=True)
+    st.markdown(f"### 📋 Caratteristiche Tecniche: {pref if 'SIEMENS' in brand else 'Equivalente'}")
+    
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("PDI", pdi)
+    m2.metric("Poli", poli_label.split(" ")[0])
+    m3.metric("Curva", curva_label)
+    m4.metric("In", f"{amp} A")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
         # --- LOGICA SIEMENS ---
         if "SIEMENS" in brand:
