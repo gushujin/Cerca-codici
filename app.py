@@ -43,24 +43,27 @@ with col_params:
         pol = poli_val[0]
         curv_let = curva_val[-1] # Prende B, C o D
 
-      # --- LOGICA HAGER CORRETTA (Allineata a Tabella POSizioni) ---
+     # --- LOGICA HAGER DEFINITIVA (Allineata a Codice Reale MBA116) ---
         if brand == "HAGER":
-            pdi_map = {"6 kA":"N", "10 kA":"H", "15 kA":"L"}
-            pdi_let = pdi_map.get(pdi_val, "N") # POS.4
+            # Mappatura PDI per lettera di serie (6kA=B, 10kA=C secondo catalogo standard)
+            # Nota: Nelle serie civili Hager, 'B' identifica spesso il 6kA
+            pdi_map = {"6 kA":"B", "10 kA":"C", "15 kA":"D"}
+            pdi_let = pdi_map.get(pdi_val, "B") 
             
-            # Costruzione codice REALE: M (1) + Curva (2) + Poli (3) + Ampere (5-6) + PDI (4)
-            # Nota: Per Hager, la serie commerciale è M + Curva + PDI + Poli + Ampere (es. MCN116)
-            # Per rispettare la TUA tabella POSizioni:
-            codice_final = f"M{curv_let}{pol}{pdi_let}{amp}" 
+            # Mappatura Curve (A=B, B=C, C=D secondo codifica specifica)
+            curva_map = {"Curva B":"A", "Curva C":"B", "Curva D":"C"}
+            curv_let_hager = curva_map.get(curva_val, "B")
             
-            # Visualizzazione POSizioni (Deve corrispondere esattamente ai quadratini)
+            # COMPOSIZIONE: M + PDI + CURVA + POLI + AMPERE
+            codice_final = f"M{pdi_let}{curv_let_hager}{pol}{amp}" 
+            
+            # Analisi Struttura (Sincronizzata con il risultato finale)
             pos_data = [
-                ("1", "M"),        # Famiglia
-                ("2", curv_let),   # Curva
-                ("3", pol),        # Poli
-                ("4", pdi_let),    # PDI (Serie)
-                ("5-6", amp),      # Corrente
-                ("7", "A")         # Versione
+                ("1", "M"),               # Famiglia
+                ("2", pdi_let),           # PDI (Serie)
+                ("3", curv_let_hager),    # Curva
+                ("4", pol),               # Poli
+                ("5-6", amp)              # Corrente
             ]
             url_produttore = f"https://hager.com/it/ricerca?q={codice_final}"
 
