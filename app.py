@@ -59,7 +59,7 @@ with col_params:
 
         elif brand == "SCHNEIDER":
             pdi_map = {"6 kA":"7", "10 kA":"8", "15 kA":"9"}
-            curv_map = {"Curva B":"3", "Curva C":"4", "Curva D":"2"}
+            curv_map = {"Curva B":"2", "Curva C":"3", "Curva D":"5"}
             p_code = pdi_map.get(pdi_val, "7")
             c_code = curv_map.get(curva_val, "4")
             pol_num = poli_val[0] # Estrae '1' da '1P', ecc.
