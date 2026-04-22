@@ -47,7 +47,7 @@ with col_params:
         if brand == "HAGER":
             # Mappatura PDI per lettera di serie (6kA=B, 10kA=C secondo catalogo standard)
             # Nota: Nelle serie civili Hager, 'B' identifica spesso il 6kA
-            pdi_map = {"6 kA":"B", "10 kA":"C", "15 kA":"D"}
+            pdi_map = {"6 kA":"B", "10 kA":"C", "15 kA":"D", "25 kA":"L"}
             pdi_let = pdi_map.get(pdi_val, "B") 
             
             # Mappatura Curve (A=B, B=C, C=D secondo codifica specifica)
