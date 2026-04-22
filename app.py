@@ -62,6 +62,7 @@ with col_params:
             curv_map = {"Curva B":"3", "Curva C":"4", "Curva D":"2"}
             p_code = pdi_map.get(pdi_val, "7")
             c_code = curv_map.get(curva_val, "4")
+            pol_num = poli_val[0] # Estrae '1' da '1P', ecc.
             codice_final = f"A9F{p_code}{c_code}{pol_num}{amp_fixed}"
             pos_data = [("1-2", "A9"), ("3", "F"), ("4", p_code), ("5", c_code), ("6", pol_num), ("7-8", amp_fixed)]
             url_base = "https://www.se.com/it/it/search/"
