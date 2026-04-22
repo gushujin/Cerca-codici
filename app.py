@@ -48,16 +48,7 @@ with col_params:
 
         # --- LOGICHE BRAND (Basate sulle tabelle POS) ---
 
-        if brand == "HAGER":
-            pdi_map = {"6 kA": "B", "10 kA": "C", "15 kA": "D"}
-            curv_map = {"Curva B": "A", "Curva C": "B", "Curva D": "C"}
-            p_let = pdi_map.get(pdi_val, "B")
-            c_let = curv_map.get(curva_val, "B")
-            codice_final = f"M{p_let}{c_let}{pol_num}{amp_fixed}"
-            pos_data = [("1", "M"), ("2", p_let), ("3", c_let), ("4", pol_num), ("5-6", amp_fixed)]
-            url_base = "https://hager.com/it/ricerca?q="
-
-        elif brand == "SIEMENS":
+        if brand == "SIEMENS":
             pdi_map = {"4.5 kA":"3", "6 kA":"6", "10 kA":"4", "15 kA":"7", "25 kA":"8"}
             curv_map = {"Curva B":"6", "Curva C":"7", "Curva D":"8"}
             p_code = pdi_map.get(pdi_val, "6")
@@ -97,6 +88,15 @@ with col_params:
             codice_final = f"F8{s_code}{p_code}{curv_let}{pol_num}{amp_fixed}"
             pos_data = [("1-2", "F8"), ("3", s_code), ("4", p_code), ("5", curv_let), ("6", pol_num), ("7-8", amp_fixed)]
             url_base = "https://catalogo.bticino.it/search?q="
+    
+        elif brand == "HAGER":
+            pdi_map = {"6 kA": "B", "10 kA": "C", "15 kA": "D"}
+            curv_map = {"Curva B": "A", "Curva C": "B", "Curva D": "C"}
+            p_let = pdi_map.get(pdi_val, "B")
+            c_let = curv_map.get(curva_val, "B")
+            codice_final = f"M{p_let}{c_let}{pol_num}{amp_fixed}"
+            pos_data = [("1", "M"), ("2", p_let), ("3", c_let), ("4", pol_num), ("5-6", amp_fixed)]
+            url_base = "https://hager.com/it/ricerca?q="
 
         # --- BOX ANALISI ---
         if pos_data:
