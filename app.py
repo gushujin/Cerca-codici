@@ -43,23 +43,24 @@ with col_params:
         pol = poli_val[0]
         curv_let = curva_val[-1] # Prende B, C o D
 
-        # --- LOGICA HAGER AGGIORNATA (POS.3 = POLI, POS.4 = PDI) ---
+      # --- LOGICA HAGER CORRETTA (Allineata a Tabella POSizioni) ---
         if brand == "HAGER":
             pdi_map = {"6 kA":"N", "10 kA":"H", "15 kA":"L"}
-            pdi_let = pdi_map.get(pdi_val, "N")
+            pdi_let = pdi_map.get(pdi_val, "N") # POS.4
             
-            # Costruzione codice: Famiglia (M) + Curva + Poli + Ampere (la serie N/H/L è implicita nella famiglia MCN/MCH/MCL)
-            # Nota: In Hager il codice commerciale standard è spesso M + Curva + Poli + Ampere
-            codice_final = f"M{pdi_let}{curv_let}{pol}{amp}" 
+            # Costruzione codice REALE: M (1) + Curva (2) + Poli (3) + Ampere (5-6) + PDI (4)
+            # Nota: Per Hager, la serie commerciale è M + Curva + PDI + Poli + Ampere (es. MCN116)
+            # Per rispettare la TUA tabella POSizioni:
+            codice_final = f"M{curv_let}{pol}{pdi_let}{amp}" 
             
-            # Visualizzazione POSizioni secondo la tua ultima tabella
+            # Visualizzazione POSizioni (Deve corrispondere esattamente ai quadratini)
             pos_data = [
-                ("1", "M"), 
-                ("2", curv_let), 
-                ("3", pol), 
-                ("4", pdi_let), 
-                ("5-6", amp), 
-                ("7", "A")
+                ("1", "M"),        # Famiglia
+                ("2", curv_let),   # Curva
+                ("3", pol),        # Poli
+                ("4", pdi_let),    # PDI (Serie)
+                ("5-6", amp),      # Corrente
+                ("7", "A")         # Versione
             ]
             url_produttore = f"https://hager.com/it/ricerca?q={codice_final}"
 
