@@ -64,7 +64,7 @@ with col_params:
             c_code = curv_map.get(curva_val, "4")
             codice_final = f"A9F{p_code}{c_code}{pol_num}{amp_fixed}"
             pos_data = [("1-2", "A9"), ("3", "F"), ("4", p_code), ("5", c_code), ("6", pol_num), ("7-8", amp_fixed)]
-            url_base = "https://mall.industry.siemens.com/goos/WelcomePage.aspx?regionUrl=/it&language=it"
+            url_base = "https://www.se.com/it/it/search/"
 
         elif brand == "ABB":
             pdi_map = {"4.5 kA":"L", "10 kA":"M", "25 kA":"P"}
