@@ -18,7 +18,7 @@ st.markdown("""
 # --- SIDEBAR: SELEZIONE CATEGORIA E BRAND ---
 st.sidebar.title("⚙️ Configurazione")
 categoria = st.sidebar.selectbox("Seleziona Categoria", ["Magnetotermici (MCB)", "Differenziali"])
-brand = st.sidebar.selectbox("Brand Selezionato", ["HAGER", "SIEMENS", "SCHNEIDER", "ABB", "GEWISS", "BTICINO"])
+brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "SCHNEIDER", "ABB", "GEWISS", "BTICINO", "HAGER"])
 
 st.title("🔌 Portale Tecnico Multibrand")
 st.divider()
