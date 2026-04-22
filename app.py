@@ -55,7 +55,7 @@ with col_params:
             c_code = curv_map.get(curva_val, "7")
             codice_final = f"5SL{p_code}{pol_num}{amp_fixed}-{c_code}"
             pos_data = [("1-2", "5S"), ("3", "L"), ("4", p_code), ("5", pol_num), ("6-7", amp_fixed), ("8", c_code)]
-            url_base = "https://www.siemens.com/it-it/search/?q="
+            url_base = "https://support.industry.siemens.com/cs/products?search="
 
         elif brand == "SCHNEIDER":
             pdi_map = {"6 kA":"7", "10 kA":"8", "15 kA":"9"}
