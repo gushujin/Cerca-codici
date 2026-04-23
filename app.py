@@ -72,7 +72,7 @@ with col_params:
             st.text_input("Serie (POS.3)", value="F", disabled=True)
 
             # POS. 4: PDI
-            pdi_opt = ["7", "8", "9"]
+            pdi_opt = ["6 KA", "10 KA", "15 KA"]
             p_code = st.selectbox("Potere Interruzione (PDI - POS.4)", pdi_opt)
             # Mappa per il riepilogo testuale (opzionale)
             pdi_map_desc = {"7": "6 kA", "8": "10 kA", "9": "15 kA"}
