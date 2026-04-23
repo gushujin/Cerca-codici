@@ -134,7 +134,7 @@ with col_params:
         #    with cols[i]:
                 # HTML/CSS per creare il box colorato
         #        st.markdown(
-                    f"""
+        #            f"""
                     <div style="
                         border: 2px solid #00778b;
                         border-radius: 10px;
