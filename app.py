@@ -63,61 +63,45 @@ with col_params:
     elif brand == "SCHNEIDER":
         c1, c2 = st.columns(2)
         with c1:
-            # POS. 1-2: FAMIGLIA (Da Allegato Schneider)
-            fam_opt = {
-                "A9 = Terziario/commerciale": "A9",
-                "R9 = Residenziale": "R9"
-            }
-            fam_sel = st.selectbox("Famiglia (POS.1-2)", list(fam_opt.keys()))
-            fam_code = fam_opt[fam_sel]
+            # POS. 1-2: FAMIGLIA
+            fam_opt = ["A9", "R9"]
+            fam_code = st.selectbox("Famiglia (POS.1-2)", fam_opt)
 
-            # POS. 3: SERIE (Vincolo: F)
-            serie_opt = {"F = iC60N, 6 kA": "F"}
-            serie_sel = st.selectbox("Serie (POS.3)", list(serie_opt.keys()))
-            serie_code = serie_opt[serie_sel]
+            # POS. 3: SERIE
+            serie_code = "F"
+            st.text_input("Serie (POS.3)", value="F", disabled=True)
 
-            # POS. 4: PDI (Da Allegato Schneider)
-            pdi_opt = {
-                "7 = Ic60n-6.000 A (6 kA)": "7",
-                "8 = iC60H-10.000 A (10 kA)": "8",
-                "9 = iC60L-15.000 A (15 kA)": "9"
-            }
-            pdi_sel = st.selectbox("PDI (POS.4)", list(pdi_opt.keys()))
-            p_code = pdi_opt[pdi_sel]
+            # POS. 4: PDI
+            pdi_opt = ["7", "8", "9"]
+            p_code = st.selectbox("PDI (POS.4)", pdi_opt)
+            # Mappa per il riepilogo testuale (opzionale)
+            pdi_map_desc = {"7": "6 kA", "8": "10 kA", "9": "15 kA"}
+            pdi_val = pdi_map_desc[p_code]
 
-            # POS. 5: CURVA (Da Allegato Schneider)
-            curv_opt = {
-                "3 = Curva B": "3",
-                "4 = Curva C": "4",
-                "2 = Curva D": "2"
-            }
-            curv_sel = st.selectbox("Curva (POS.5)", list(curv_opt.keys()))
-            c_code = curv_opt[curv_sel]
+            # POS. 5: CURVA
+            curv_opt = ["2", "3", "4"]
+            c_code = st.selectbox("Curva (POS.5)", curv_opt)
+            # Mappa per il riepilogo testuale (2=D, 3=B, 4=C secondo tabella)
+            curv_map_desc = {"2": "Curva D", "3": "Curva B", "4": "Curva C"}
+            curva_val = curv_map_desc[c_code]
 
         with c2:
-            # POS. 6: POLI (Da Allegato Schneider)
-            pol_opt = {
-                "1 = 1P": "1",
-                "2 = 2P": "2",
-                "3 = 3P": "3",
-                "4 = 4P": "4",
-                "5 = 1P+N": "5"
-            }
-            pol_sel = st.selectbox("Poli (POS.6)", list(pol_opt.keys()))
-            pol_code = pol_opt[pol_sel]
+            # POS. 6: POLI
+            pol_opt = ["1", "2", "3", "4", "5"]
+            pol_code = st.selectbox("Poli (POS.6)", pol_opt)
+            # Mappa per il riepilogo testuale
+            pol_map_desc = {"1": "1P", "2": "2P", "3": "3P", "4": "4P", "5": "1P+N"}
+            poli_val = pol_map_desc[pol_code]
 
-            # POS. 7-8: CORRENTE NOMINALE (Da Allegato Schneider)
-            amp_opt = [
-                "06 = 6A", "10 = 10A", "16 = 16A", "20 = 20A", 
-                "25 = 25A", "32 = 32A", "40 = 40A", "50 = 50A", "63 = 63A"
-            ]
-            amp_sel = st.selectbox("Corrente Nominale (POS.7-8)", amp_opt)
-            amp_fixed = amp_sel.split(" ")[0] # Estrae '06', '10', ecc.
+            # POS. 7-8: CORRENTE NOMINALE
+            amp_opt = ["06", "10", "16", "20", "25", "32", "40", "50", "63"]
+            amp_fixed = st.selectbox("Corrente Nominale (POS.7-8)", amp_opt)
+            amp_val = f"{int(amp_fixed)}A"
 
-        # Composizione finale secondo la sequenza corretta
+        # Composizione finale del codice articolo
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        # Struttura per il Box Analisi
+        # Dati per i quadratini dell'analisi struttura
         pos_data = [
             ("1-2", fam_code), 
             ("3", serie_code), 
@@ -127,6 +111,7 @@ with col_params:
             ("7-8", amp_fixed)
         ]
         url_base = "https://www.se.com/it/it/search/"
+    
     elif brand == "HAGER":
         c1, c2 = st.columns(2)
         with c1:
