@@ -60,7 +60,7 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-   elif brand == "SCHNEIDER":
+    elif brand == "SCHNEIDER":
     st.subheader("Configuratore Acti9 iC60N")
     c1, c2 = st.columns(2)
     
