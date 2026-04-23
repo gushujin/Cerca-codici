@@ -63,8 +63,8 @@ with col_params:
     elif brand == "SCHNEIDER":
         c1, c2 = st.columns(2)
         
-        with c2:
-            st.subheader("Configuratore Acti9 iC60N") 
+        #with c2:
+        #    st.subheader("Configuratore Acti9 iC60N") 
 
         with c1:
             # POS. 1-2: FAMIGLIA
@@ -111,14 +111,14 @@ with col_params:
         url_base = "https://www.se.com/it/it//products?search="
         
         # RISULTATO FINALE
-        st.divider()
-        st.success(f"**Codice Schneider Generato: {codice_final}**")
+        #st.divider()
+        #st.success(f"**Codice Schneider Generato: {codice_final}**")
 
         # --- NUOVA PARTE GRAFICA: ANALISI STRUTTURA CODICE ---
-        st.write("### 🔍 Analisi Struttura Codice SCHNEIDER")
+        #st.write("### 🔍 Analisi Struttura Codice SCHNEIDER")
         
         # Creiamo 6 colonne per i 6 blocchi del codice
-        cols = st.columns(6)
+        #cols = st.columns(6)
         
         # Definiamo i dati dei box (Etichetta, Valore)
         struttura = [
@@ -130,10 +130,10 @@ with col_params:
             ("POS.7-8", amp_fixed)
         ]
         
-        for i, (label, value) in enumerate(struttura):
-            with cols[i]:
+        #for i, (label, value) in enumerate(struttura):
+        #    with cols[i]:
                 # HTML/CSS per creare il box colorato
-                st.markdown(
+        #        st.markdown(
                     f"""
                     <div style="
                         border: 2px solid #00778b;
