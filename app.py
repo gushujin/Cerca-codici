@@ -108,10 +108,7 @@ with col_params:
 
         # COMPOSIZIONE FINALE
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
-        
-        # --- COMPOSIZIONE FINALE ---
-        codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
-        
+             
         # RISULTATO FINALE
         st.divider()
         st.success(f"**Codice Schneider Generato: {codice_final}**")
