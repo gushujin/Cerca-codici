@@ -109,6 +109,49 @@ with col_params:
         # COMPOSIZIONE FINALE
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
+        # --- COMPOSIZIONE FINALE ---
+        codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+        
+        # RISULTATO FINALE
+        st.divider()
+        st.success(f"**Codice Schneider Generato: {codice_final}**")
+
+        # --- NUOVA PARTE GRAFICA: ANALISI STRUTTURA CODICE ---
+        st.write("### 🔍 Analisi Struttura Codice SCHNEIDER")
+        
+        # Creiamo 6 colonne per i 6 blocchi del codice
+        cols = st.columns(6)
+        
+        # Definiamo i dati dei box (Etichetta, Valore)
+        struttura = [
+            ("POS.1-2", fam_code),
+            ("POS.3", serie_code),
+            ("POS.4", p_code),
+            ("POS.5", c_code),
+            ("POS.6", pol_code),
+            ("POS.7-8", amp_fixed)
+        ]
+        
+        for i, (label, value) in enumerate(struttura):
+            with cols[i]:
+                # HTML/CSS per creare il box colorato
+                st.markdown(
+                    f"""
+                    <div style="
+                        border: 2px solid #00778b;
+                        border-radius: 10px;
+                        padding: 10px;
+                        text-align: center;
+                        background-color: #f0f8f9;
+                        min-height: 80px;">
+                        <p style="margin: 0; font-size: 12px; color: #555; font-weight: bold;">{label}</p>
+                        <p style="margin: 0; font-size: 24px; color: #e63946; font-weight: bold;">{value}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+    
         # RISULTATO FINALE (Senza log o immagini aggiuntive)
         # st.divider()
         # st.success(f"**Codice Schneider Generato: {codice_final}**")
