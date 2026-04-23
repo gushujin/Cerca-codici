@@ -17,8 +17,8 @@ st.markdown("""
 
 # --- SIDEBAR: SELEZIONE CATEGORIA E BRAND ---
 st.sidebar.title("⚙️ Configurazione")
-categoria = st.sidebar.selectbox("Seleziona Categoria", ["Magnetotermici (MCB)", "Differenziali"])
-brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "SCHNEIDER", "ABB", "GEWISS", "BTICINO", "HAGER"])
+categoria = st.sidebar.selectbox("Seleziona Categoria", ["Magnetotermici (MCB)"])
+brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "SCHNEIDER", "HAGER", "ABB", "GEWISS", "BTICINO"])
 
 st.title("🔌 Portale Tecnico Multibrand")
 st.divider()
@@ -26,87 +26,91 @@ st.divider()
 col_params, col_res = st.columns([1.8, 1.2])
 
 with col_params:
-    st.subheader("🛠️ Specifiche Tecniche")
+    st.subheader(f"🛠️ Specifiche Tecniche {brand}")
     codice_final = "N/D"
     pos_data = [] 
     url_base = ""
 
-    if categoria == "Magnetotermici (MCB)":
+    # --- LOGICHE BRAND CON VINCOLI INTERNI ---
+    
+    if brand == "SIEMENS":
         c1, c2 = st.columns(2)
         with c1:
-            pdi_val = st.selectbox("Potere Interruzione (PDI)", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
-            poli_val = st.selectbox("Poli", ["1P", "2P", "3P", "4P", "1P+N", "3P+N"])
-        with c2:
-            amp_val = st.selectbox("Corrente Nominale (In)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
-            curva_val = st.selectbox("Curva", ["Curva B", "Curva C", "Curva D"])
-
-        # Preparazione variabili comuni
-        amp_num = amp_val.replace("A", "")
-        amp_fixed = amp_num.zfill(2) # Forza sempre 2 cifre (es. 06 invece di 6)
-        pol_num = poli_val[0]
-        curv_let = curva_val[-1] # B, C o D
-
-        # --- LOGICHE BRAND (Basate sulle tabelle POS) ---
-
-        if brand == "SIEMENS":
+            # Vincoli POS.3
+            serie_val = st.selectbox("Serie (POS.3)", ["L=Standard", "Y=Industriale", "P=Di Potenza"])
+            serie_code = serie_val[0]
+            # Vincoli POS.4
+            pdi_val = st.selectbox("Potere Interruzione (PDI - POS.4)", ["4.5 kA", "6 kA", "10 kA", "15 kA", "25 kA"])
             pdi_map = {"4.5 kA":"3", "6 kA":"6", "10 kA":"4", "15 kA":"7", "25 kA":"8"}
+            p_code = pdi_map.get(pdi_val)
+        with c2:
+            # Vincoli POS.5
+            poli_val = st.selectbox("Poli (POS.5)", ["1P", "2P", "3P", "4P", "1P+N", "3P+N"])
+            pol_map = {"1P":"1", "2P":"2", "3P":"3", "4P":"4", "1P+N":"5", "3P+N":"6"}
+            pol_code = pol_map.get(poli_val)
+            # Vincoli POS.6-7
+            amp_val = st.selectbox("Corrente (In - POS.6-7)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
+            amp_fixed = amp_val.replace("A", "").zfill(2)
+            # Vincoli POS.8
+            curva_val = st.selectbox("Curva (POS.8)", ["Curva B", "Curva C", "Curva D"])
             curv_map = {"Curva B":"6", "Curva C":"7", "Curva D":"8"}
-            p_code = pdi_map.get(pdi_val, "6")
-            c_code = curv_map.get(curva_val, "7")
-            codice_final = f"5SL{p_code}{pol_num}{amp_fixed}-{c_code}"
-            pos_data = [("1-2", "5S"), ("3", "L"), ("4", p_code), ("5", pol_num), ("6-7", amp_fixed), ("8", c_code)]
-            url_base = "https://support.industry.siemens.com/cs/products?search="
+            c_code = curv_map.get(curva_val)
 
-        elif brand == "SCHNEIDER":
+        codice_final = f"5S{serie_code}{p_code}{pol_code}{amp_fixed}{c_code}"
+        pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
+        url_base = "https://support.industry.siemens.com/cs/products?search="
+
+    elif brand == "SCHNEIDER":
+        c1, c2 = st.columns(2)
+        with c1:
+            # Vincolo: Schneider iC60 parte da 6kA
+            pdi_val = st.selectbox("Potere Interruzione (PDI - POS.4)", ["6 kA", "10 kA", "15 kA"])
             pdi_map = {"6 kA":"7", "10 kA":"8", "15 kA":"9"}
-            curv_map = {"Curva B":"2", "Curva C":"3", "Curva D":"5"}
-            p_code = pdi_map.get(pdi_val, "7")
-            c_code = curv_map.get(curva_val, "4")
-            pol_num = poli_val[0] # Estrae '1' da '1P', ecc.
-            codice_final = f"A9F{p_code}{c_code}{pol_num}{amp_fixed}"
-            pos_data = [("1-2", "A9"), ("3", "F"), ("4", p_code), ("5", c_code), ("6", pol_num), ("7-8", amp_fixed)]
-            url_base = "https://www.se.com/it/it/search/"
+            p_code = pdi_map.get(pdi_val)
+            # Vincoli POS.5 Curva
+            curva_val = st.selectbox("Curva (POS.5)", ["Curva B", "Curva C", "Curva D"])
+            curv_map = {"Curva B":"2", "Curva C":"3", "Curva D":"5"} # Mappatura reale iC60N
+            c_code = curv_map.get(curva_val)
+        with c2:
+            # Vincoli POS.6 Poli
+            poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P", "1P+N"])
+            pol_map = {"1P":"1", "2P":"2", "3P":"3", "4P":"4", "1P+N":"5"}
+            pol_code = pol_map.get(poli_val)
+            # Vincoli POS.7-8
+            amp_val = st.selectbox("Corrente (In - POS.7-8)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
+            amp_fixed = amp_val.replace("A", "").zfill(2)
 
-        elif brand == "ABB":
-            pdi_map = {"4.5 kA":"L", "10 kA":"M", "25 kA":"P"}
-            p_code = pdi_map.get(pdi_val, "M")
-            codice_final = f"S20{pol_num}-{curv_let}{amp_fixed}"
-            pos_data = [("1-2", "S2"), ("3", "0"), ("4", p_code), ("5", pol_num), ("6", curv_let), ("7-8", amp_fixed)]
-            url_base = "https://new.abb.com/products/it/"
+        codice_final = f"A9F{p_code}{c_code}{pol_code}{amp_fixed}"
+        pos_data = [("1-2", "A9"), ("3", "F"), ("4", p_code), ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)]
+        url_base = "https://www.se.com/it/it/search/"
 
-        elif brand == "GEWISS":
-            pdi_ser = {"4.5 kA":"40", "6 kA":"41", "10 kA":"42"}.get(pdi_val, "41")
-            pdi_spec = {"4.5 kA":"1", "6 kA":"2", "10 kA":"3", "15 kA":"4"}.get(pdi_val, "2")
-            codice_final = f"GW{pdi_ser}{curv_let}{pdi_spec}0{pol_num}{amp_fixed}"
-            pos_data = [("1-2", "GW"), ("3-4", pdi_ser), ("5", curv_let), ("6", pdi_spec), ("7-8", f"0{pol_num}"), ("9-10", amp_fixed)]
-            url_base = "https://www.gewiss.com/it/it/products/search?q="
-
-        elif brand == "BTICINO":
-            ser_map = {"4.5 kA":"1", "6 kA":"2", "10 kA":"3"}
-            pdi_map = {"4.5 kA":"A", "6 kA":"N", "10 kA":"H", "16 kA":"S"}
-            s_code = ser_map.get(pdi_val, "2")
-            p_code = pdi_map.get(pdi_val, "N")
-            codice_final = f"F8{s_code}{p_code}{curv_let}{pol_num}{amp_fixed}"
-            pos_data = [("1-2", "F8"), ("3", s_code), ("4", p_code), ("5", curv_let), ("6", pol_num), ("7-8", amp_fixed)]
-            url_base = "https://catalogo.bticino.it/search?q="
-    
-        elif brand == "HAGER":
+    elif brand == "HAGER":
+        c1, c2 = st.columns(2)
+        with c1:
+            pdi_val = st.selectbox("Potere Interruzione (PDI)", ["6 kA", "10 kA", "15 kA"])
             pdi_map = {"6 kA": "B", "10 kA": "C", "15 kA": "D"}
+            p_let = pdi_map.get(pdi_val)
+            curva_val = st.selectbox("Curva", ["Curva B", "Curva C", "Curva D"])
             curv_map = {"Curva B": "A", "Curva C": "B", "Curva D": "C"}
-            p_let = pdi_map.get(pdi_val, "B")
-            c_let = curv_map.get(curva_val, "B")
-            codice_final = f"M{p_let}{c_let}{pol_num}{amp_fixed}"
-            pos_data = [("1", "M"), ("2", p_let), ("3", c_let), ("4", pol_num), ("5-6", amp_fixed)]
-            url_base = "https://hager.com/it/ricerca?q="
+            c_let = curv_map.get(curva_val)
+        with c2:
+            poli_val = st.selectbox("Poli", ["1P", "2P", "3P", "4P"])
+            pol_num = poli_val[0]
+            amp_val = st.selectbox("Corrente (In)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
+            amp_fixed = amp_val.replace("A", "").zfill(2)
 
-        # --- BOX ANALISI ---
-        if pos_data:
-            st.markdown("---")
-            st.write(f"🔍 **Analisi Struttura Codice {brand}**")
-            p_cols = st.columns(len(pos_data))
-            for i, (label, val) in enumerate(pos_data):
-                with p_cols[i]:
-                    st.markdown(f"""<div class="pos-box"><div class="pos-label">POS.{label}</div><div class="pos-val">{val}</div></div>""", unsafe_allow_html=True)
+        codice_final = f"M{p_let}{c_let}{pol_num}{amp_fixed}"
+        pos_data = [("1", "M"), ("2", p_let), ("3", c_let), ("4", pol_num), ("5-6", amp_fixed)]
+        url_base = "https://hager.com/it/ricerca?q="
+
+    # --- BOX ANALISI (Comune) ---
+    if pos_data:
+        st.markdown("---")
+        st.write(f"🔍 **Analisi Struttura Codice {brand}**")
+        p_cols = st.columns(len(pos_data))
+        for i, (label, val) in enumerate(pos_data):
+            with p_cols[i]:
+                st.markdown(f"""<div class="pos-box"><div class="pos-label">POS.{label}</div><div class="pos-val">{val}</div></div>""", unsafe_allow_html=True)
 
 with col_res:
     st.subheader("📌 Scheda Prodotto")
@@ -116,7 +120,7 @@ with col_res:
                 <h2 style='color:#015F73; margin-top:0;'>{brand}</h2>
                 <p><b>Categoria:</b> {categoria}</p>
                 <hr>
-                <p style='font-size:14px; color:#555;'><b>Parametri:</b><br>
+                <p style='font-size:14px; color:#555;'><b>Parametri Generati:</b><br>
                 {pdi_val} | {poli_val} | {amp_val} | {curva_val}</p>
                 <div style='background:#f9f9f9; padding:15px; border-radius:8px; text-align:center;'>
                     <span style='font-size:12px; color:#888;'>CODICE ARTICOLO COMPLETO</span><br>
@@ -125,5 +129,3 @@ with col_res:
                 <a href="{url_base}{codice_final}" target="_blank" class="btn-link">Vai al Catalogo Ufficiale ↗</a>
             </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info("Configura i parametri tecnici.")
