@@ -108,7 +108,8 @@ with col_params:
 
         # COMPOSIZIONE FINALE
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
-             
+        url_base = "https://www.se.com/it/it//products?search="
+        
         # RISULTATO FINALE
         st.divider()
         st.success(f"**Codice Schneider Generato: {codice_final}**")
@@ -147,11 +148,6 @@ with col_params:
                     """,
                     unsafe_allow_html=True
                 )
-
-    
-        # RISULTATO FINALE (Senza log o immagini aggiuntive)
-        # st.divider()
-        # st.success(f"**Codice Schneider Generato: {codice_final}**")
     
     elif brand == "HAGER":
         c1, c2 = st.columns(2)
