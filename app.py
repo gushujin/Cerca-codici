@@ -91,15 +91,15 @@ with col_params:
             pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
             pol_code = pol_map[poli_val]
 
-            # SELEZIONE CURVA (POS. 5 - LOGICA INTERDIPENDENTE)
-            curva_tipo = st.selectbox("Curva di Intervento", ["B", "C", "D"])
-            
-            if curva_tipo == "B":
-                c_code = "3" if current_numeric < 6 else "8"
-            elif curva_tipo == "C":
-                c_code = "4" if current_numeric < 6 else "9"
-            else: # Curva D
-                c_code = "5"
+           # SELEZIONE CURVA (POS. 5 - LOGICA INTERDIPENDENTE)
+        curva_val = st.selectbox("Curva di Intervento", ["B", "C", "D"]) # <--- Cambiato da curva_tipo a curva_val
+        
+        if curva_val == "B":
+            c_code = "3" if current_numeric < 6 else "8"
+        elif curva_val == "C":
+            c_code = "4" if current_numeric < 6 else "9"
+        else: # Curva D
+            c_code = "5"
 
             # GESTIONE POS. 7-8
             if current_numeric == 0.5:
