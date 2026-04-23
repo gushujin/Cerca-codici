@@ -90,7 +90,7 @@ with col_params:
             pol_code = pol_map[poli_val]
 
             # POS. 7-8: CORRENTE NOMINALE
-            amp_val = st.selectbox("Corrente (POS.7-8)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
+            amp_val = st.selectbox("Corrente (POS.7-8)", ["0,5A","1A","2A","3A","4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
             amp_map = {
                 "0,5A": "0,5","1A": "01","2A": "02","3A": "03","4A": "04","6A": "06", "10A": "10", "16A": "16", "20A": "20", 
                 "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
