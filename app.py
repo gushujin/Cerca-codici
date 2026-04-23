@@ -61,7 +61,7 @@ with col_params:
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
     elif brand == "SCHNEIDER":
-        # Tutto il codice qui sotto deve essere rientrato (indentato) di un livello rispetto a elif
+        # Layout: il titolo viene spostato a destra nella colonna c2
         c1, c2 = st.columns(2)
         
         with c2:
@@ -71,47 +71,59 @@ with col_params:
             # POS. 1-2: FAMIGLIA
             fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
 
-            # POS. 3: SERIE
+            # POS. 3: SERIE (Fissa per iC60)
             serie_code = "F"
             st.text_input("Serie (POS.3)", value="F", disabled=True)
 
-            # POS. 4: PDI
+            # POS. 4: PDI (Mappatura: 6kA->7, 10kA->8, 15kA->9)
             pdi_val = st.selectbox("PDI (POS.4)", ["6 kA", "10 kA", "15 kA"])
             pdi_map = {"6 kA": "7", "10 kA": "8", "15 kA": "9"}
             p_code = pdi_map[pdi_val]
 
-            # SELEZIONE CORRENTE
+            # SELEZIONE CORRENTE (POS. 7-8)
+            # Nota: Definiamo amp_val qui per usarlo nella logica della POS. 5
             amp_options = ["0,5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
             amp_val = st.selectbox("Corrente Nominale (POS.7-8)", amp_options)
+            
+            # Conversione tecnica per il calcolo logico
             current_numeric = float(amp_val.replace('A', '').replace(',', '.'))
 
         with c2:
-            # SELEZIONE POLI (POS. 6)
+            # POS. 6: POLI
             poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P"])
             pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
             pol_code = pol_map[poli_val]
 
-           # SELEZIONE CURVA (POS. 5 - LOGICA INTERDIPENDENTE)
-        curva_val = st.selectbox("Curva di Intervento", ["B", "C", "D"]) # <--- Cambiato da curva_tipo a curva_val
-        
-        if curva_val == "B":
-            c_code = "3" if current_numeric < 6 else "8"
-        elif curva_val == "C":
-            c_code = "4" if current_numeric < 6 else "9"
-        else: # Curva D
-            c_code = "5"
+            # POS. 5: CURVA (LOGICA INTERDIPENDENTE)
+            curva_val = st.selectbox("Curva di Intervento", ["B", "C", "D"])
+            
+            # --- RELAZIONE MUTUA: CURVA + CORRENTE ---
+            if curva_val == "B":
+                # Se minore di 6A usa 3, altrimenti 8
+                c_code = "3" if current_numeric < 6 else "8"
+            elif curva_val == "C":
+                # Se minore di 6A usa 4, altrimenti 9
+                c_code = "4" if current_numeric < 6 else "9"
+            else: # Curva D
+                # Mantiene il 5 per tutto il range iC60N
+                c_code = "5"
 
-            # GESTIONE POS. 7-8
+            # --- DEFINIZIONE amp_fixed (POS. 7-8) ---
             if current_numeric == 0.5:
-                amp_fixed = "70"
+                amp_fixed = "70" # Eccezione specifica 0.5A -> 70
             else:
+                # Trasforma 6A in 06, 10A in 10, ecc.
                 amp_fixed = f"{int(current_numeric):02d}"
 
-        # Composizione finale
+        # --- COMPOSIZIONE FINALE (Deve essere indentata sotto 'elif') ---
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
+        # Output grafico
         st.divider()
         st.success(f"**Codice Schneider Generato: {codice_final}**")
+        
+        # Riepilogo per debugging o conferma utente
+        st.write(f"Configurazione: {pdi_val} | {poli_val} | {amp_val} | Curva {curva_val}")
     
     elif brand == "HAGER":
         c1, c2 = st.columns(2)
