@@ -110,8 +110,8 @@ with col_params:
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
         # RISULTATO FINALE (Senza log o immagini aggiuntive)
-        st.divider()
-        st.success(f"**Codice Schneider Generato: {codice_final}**")
+        # st.divider()
+        # st.success(f"**Codice Schneider Generato: {codice_final}**")
     
     elif brand == "HAGER":
         c1, c2 = st.columns(2)
