@@ -113,7 +113,7 @@ with col_params:
         st.divider()
         st.success(f"**Codice Schneider Generato: {codice_final}**")
     
-elif brand == "HAGER":
+    elif brand == "HAGER":
         c1, c2 = st.columns(2)
         with c1:
             pdi_val = st.selectbox("Potere Interruzione (PDI)", ["6 kA", "10 kA", "15 kA"])
