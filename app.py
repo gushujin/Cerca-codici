@@ -73,7 +73,7 @@ with col_params:
 
             # POS. 4: PDI
             pdi_opt = ["7", "8", "9"]
-            p_code = st.selectbox("PDI (POS.4)", pdi_opt)
+            p_code = st.selectbox("Potere Interruzione (PDI - POS.4)", pdi_opt)
             # Mappa per il riepilogo testuale (opzionale)
             pdi_map_desc = {"7": "6 kA", "8": "10 kA", "9": "15 kA"}
             pdi_val = pdi_map_desc[p_code]
