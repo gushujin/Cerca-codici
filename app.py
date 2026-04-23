@@ -61,75 +61,57 @@ with col_params:
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
     elif brand == "SCHNEIDER":
-    # Layout con colonne
-    c1, c2 = st.columns(2)
-    
-    with c2:
-        # Spostato a destra come richiesto
-        st.subheader("Configuratore Acti9 iC60N") 
-
-    with c1:
-        # POS. 1-2: FAMIGLIA
-        fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
-
-        # POS. 3: SERIE
-        serie_code = "F"
-        st.text_input("Serie (POS.3)", value="F", disabled=True)
-
-        # POS. 4: PDI (In base alla tabella iC60N = 7)
-        # Se l'utente cambia PDI, il prefisso A9F7 identifica la serie iC60N
-        pdi_val = st.selectbox("PDI (POS.4)", ["6 kA", "10 kA", "15 kA"])
-        pdi_map = {"6 kA": "7", "10 kA": "8", "15 kA": "9"}
-        p_code = pdi_map[pdi_val]
-
-        # SELEZIONE CORRENTE (Necessaria prima della curva per calcolare la POS. 5)
-        amp_options = ["0,5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
-        amp_val = st.selectbox("Corrente Nominale (POS.7-8)", amp_options)
+        # Tutto il codice qui sotto deve essere rientrato (indentato) di un livello rispetto a elif
+        c1, c2 = st.columns(2)
         
-        # Trasformazione in float per la logica di controllo (0,5 -> 0.5)
-        current_numeric = float(amp_val.replace('A', '').replace(',', '.'))
+        with c2:
+            st.subheader("Configuratore Acti9 iC60N") 
 
-    with c2:
-        # SELEZIONE POLI (POS. 6)
-        poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P"])
-        pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
-        pol_code = pol_map[poli_val]
+        with c1:
+            # POS. 1-2: FAMIGLIA
+            fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
 
-        # SELEZIONE CURVA (POS. 5 - LOGICA INTERDIPENDENTE)
-        curva_tipo = st.selectbox("Curva di Intervento", ["B", "C", "D"])
+            # POS. 3: SERIE
+            serie_code = "F"
+            st.text_input("Serie (POS.3)", value="F", disabled=True)
+
+            # POS. 4: PDI
+            pdi_val = st.selectbox("PDI (POS.4)", ["6 kA", "10 kA", "15 kA"])
+            pdi_map = {"6 kA": "7", "10 kA": "8", "15 kA": "9"}
+            p_code = pdi_map[pdi_val]
+
+            # SELEZIONE CORRENTE
+            amp_options = ["0,5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+            amp_val = st.selectbox("Corrente Nominale (POS.7-8)", amp_options)
+            current_numeric = float(amp_val.replace('A', '').replace(',', '.'))
+
+        with c2:
+            # SELEZIONE POLI (POS. 6)
+            poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P"])
+            pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
+            pol_code = pol_map[poli_val]
+
+            # SELEZIONE CURVA (POS. 5 - LOGICA INTERDIPENDENTE)
+            curva_tipo = st.selectbox("Curva di Intervento", ["B", "C", "D"])
+            
+            if curva_tipo == "B":
+                c_code = "3" if current_numeric < 6 else "8"
+            elif curva_tipo == "C":
+                c_code = "4" if current_numeric < 6 else "9"
+            else: # Curva D
+                c_code = "5"
+
+            # GESTIONE POS. 7-8
+            if current_numeric == 0.5:
+                amp_fixed = "70"
+            else:
+                amp_fixed = f"{int(current_numeric):02d}"
+
+        # Composizione finale
+        codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        # --- APPLICAZIONE RELAZIONE A 3 VARIABILI ---
-        if curva_tipo == "B":
-            # Se Corrente < 6A -> 3, altrimenti 8
-            c_code = "3" if current_numeric < 6 else "8"
-        elif curva_tipo == "C":
-            # Se Corrente < 6A -> 4, altrimenti 9
-            c_code = "4" if current_numeric < 6 else "9"
-        else: # Curva D
-            # La curva D mantiene il 5 per quasi tutto il range
-            c_code = "5"
-
-        # GESTIONE POS. 7-8 (ECCEZIONE 0,5A)
-        if current_numeric == 0.5:
-            amp_fixed = "70" # Come da tabella A9F73170
-        else:
-            # Formattazione a due cifre (es: 1A -> 01, 10A -> 10)
-            amp_fixed = f"{int(current_numeric):02d}"
-
-    # Composizione finale basata sulla mutua relazione
-    codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
-    
-    # Visualizzazione Dati Posizioni
-    pos_data = [
-        ("1-2", fam_code), ("3", serie_code), ("4", p_code), 
-        ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
-    ]
-    
-    st.divider()
-    st.success(f"**Codice Schneider Generato: {codice_final}**")
-    
-    # Opzionale: Mostra la spiegazione della POS 5 generata
-    st.info(f"Nota tecnica: POS.5 impostata a '{c_code}' perché Curva {curva_tipo} con In={amp_val}")
+        st.divider()
+        st.success(f"**Codice Schneider Generato: {codice_final}**")
     
 elif brand == "HAGER":
         c1, c2 = st.columns(2)
