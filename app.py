@@ -14,7 +14,7 @@ elif brand == "SCHNEIDER":
             pdi_map = {"6 kA": "7", "10 kA": "8", "15 kA": "9"}
             p_code = pdi_map[pdi_val]
 
-            # SELEZIONE CORRENTE (POS. 7-8)
+            # SELEZIONE CORRENTE (In)
             amp_options = ["0,5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
             amp_val = st.selectbox("Corrente (In - POS.7-8)", amp_options)
             current_numeric = float(amp_val.replace('A', '').replace(',', '.'))
@@ -25,7 +25,7 @@ elif brand == "SCHNEIDER":
             pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
             pol_code = pol_map[poli_val]
 
-            # POS. 5: CURVA (Logica Interdipendente)
+            # POS. 5: CURVA (Logica Interdipendente basata su In)
             curva_val = st.selectbox("Curva (POS.5)", ["B", "C", "D"])
             
             if curva_val == "B":
@@ -35,7 +35,7 @@ elif brand == "SCHNEIDER":
             else: # Curva D
                 c_code = "5"
 
-            # DEFINIZIONE amp_fixed (POS. 7-8)
+            # DEFINIZIONE POS. 7-8
             if current_numeric == 0.5:
                 amp_fixed = "70"
             else:
