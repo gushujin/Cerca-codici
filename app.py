@@ -72,7 +72,7 @@ with col_params:
         with c1:
             fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
             serie_code = "F" # Serie fissa iC60N
-            st.text_input("Serie (POS.3)", value="F", disabled=True)
+            st.text_input("Serie (POS.3)", value="F", disabled=false)
             pdi_val = st.selectbox("PDI (POS.4)", ["6 kA", "10 kA", "15 kA"])
             pdi_map = {"6 kA": "7", "10 kA": "8", "15 kA": "9"}
             p_code = pdi_map[pdi_val]
