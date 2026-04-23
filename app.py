@@ -60,46 +60,60 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-    elif brand == "SCHNEIDER":
-        c1, c2 = st.columns(2)
-        with c1:
-            # POS. 1-2: FAMIGLIA
-            fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
+   elif brand == "SCHNEIDER":
+    st.subheader("Configuratore Acti9 iC60N")
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        # POS. 1-2: FAMIGLIA
+        fam_code = "A9"
+        st.text_input("Famiglia (POS.1-2)", value="A9", disabled=True)
 
-            # POS. 3: SERIE
-            serie_code = "F"
-            st.text_input("Serie (POS.3)", value="F", disabled=True)
+        # POS. 3: SERIE
+        serie_code = "F"
+        st.text_input("Serie (POS.3)", value="F", disabled=True)
 
-            # POS. 4: PDI
-            # L'utente sceglie il valore, noi mappiamo il numero per il codice
-            pdi_val = st.selectbox("PDI (POS.4)", ["6 kA", "10 kA", "15 kA"])
-            pdi_map = {"6 kA": "7", "10 kA": "8", "15 kA": "9"}
-            p_code = pdi_map[pdi_val]
+        # POS. 4: PDI (In base alla tua tabella A9F7... è iC60N)
+        p_code = "7"
+        st.text_input("PDI (POS.4) - iC60N 10kA", value="7", disabled=True)
 
-            # POS. 5: CURVA
-            # Menu pulito, mappatura secondo tabella (3=B, 4=C, 5=D)
-            curva_val = st.selectbox("Curva (POS.5)", ["Curva B", "Curva C", "Curva D"])
-            curv_map = {"Curva B": "3", "Curva C": "4", "Curva D": "5"}
-            c_code = curv_map[curva_val]
+        # POS. 7-8: CORRENTE NOMINALE (Spostata sopra per logica di interdipendenza)
+        amp_options = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+        amp_val = st.selectbox("Corrente Nominale (In)", amp_options)
+        
+        # Mappatura valore numerico per posizioni 7-8
+        amp_map = {
+            "0.5A": "70", "1A": "01", "2A": "02", "3A": "03", "4A": "04",
+            "6A": "06", "10A": "10", "16A": "16", "20A": "20", 
+            "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
+        }
+        amp_fixed = amp_map[amp_val]
+        # Estraiamo il valore numerico per il confronto logico
+        current_float = float(amp_val.replace('A', ''))
 
-        with c2:
-            # POS. 6: POLI
-            # Menu con "1P", "2P", ecc. Estraiamo il numero per il codice
-            poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P", "1P+N"])
-            pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4", "1P+N": "5"}
-            pol_code = pol_map[poli_val]
+    with c2:
+        # POS. 5: CURVA (INTERDIPENDENTE)
+        curva_label = st.selectbox("Curva di Intervento", ["B", "C", "D"])
+        
+        # LOGICA DI INTERDIPENDENZA POSIZIONE 5
+        if curva_label == "B":
+            c_code = "3" if current_float < 6 else "8"
+        elif curva_label == "C":
+            c_code = "4" if current_float < 6 else "9"
+        elif curva_label == "D":
+            c_code = "5" # La curva D mantiene il 5 come da tabella
+            
+        st.info(f"Cifra Posizione 5 calcolata: **{c_code}**")
 
-            # POS. 7-8: CORRENTE NOMINALE
-            # Menu con "6A", "10A", ecc. Estraiamo il valore a due cifre
-            amp_val = st.selectbox("Corrente (POS.7-8)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
-            amp_map = {
-                "6A": "06", "10A": "10", "16A": "16", "20A": "20", 
-                "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
-            }
-            amp_fixed = amp_map[amp_val]
+        # POS. 6: POLI
+        poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P"])
+        pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
+        pol_code = pol_map[poli_val]
 
-        # Composizione finale: A9 + F + 7 + 3 + 1 + 06 = A9F73106
-        codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+    # Composizione finale
+    codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+    
+    st.success(f"Codice Schneider Generato: **{codice_final}**")
         
         # Dati per l'analisi visiva
         pos_data = [
