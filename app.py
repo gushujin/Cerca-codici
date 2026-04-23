@@ -64,44 +64,44 @@ with col_params:
         c1, c2 = st.columns(2)
         with c1:
             # POS. 1-2: FAMIGLIA
-            fam_opt = ["A9", "R9"]
-            fam_code = st.selectbox("Famiglia (POS.1-2)", fam_opt)
+            fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
 
             # POS. 3: SERIE
             serie_code = "F"
             st.text_input("Serie (POS.3)", value="F", disabled=True)
 
             # POS. 4: PDI
-            pdi_opt = ["6 KA", "10 KA", "15 KA"]
-            p_code = st.selectbox("Potere Interruzione (PDI - POS.4)", pdi_opt)
-            # Mappa per il riepilogo testuale (opzionale)
-            pdi_map_desc = {"7": "6 kA", "8": "10 kA", "9": "15 kA"}
-            pdi_val = pdi_map_desc[p_code]
+            # L'utente sceglie il valore, noi mappiamo il numero per il codice
+            pdi_val = st.selectbox("PDI (POS.4)", ["6 kA", "10 kA", "15 kA"])
+            pdi_map = {"6 kA": "7", "10 kA": "8", "15 kA": "9"}
+            p_code = pdi_map[pdi_val]
 
             # POS. 5: CURVA
-            curv_opt = ["2", "3", "4"]
-            c_code = st.selectbox("Curva (POS.5)", curv_opt)
-            # Mappa per il riepilogo testuale (2=D, 3=B, 4=C secondo tabella)
-            curv_map_desc = {"2": "Curva D", "3": "Curva B", "4": "Curva C"}
-            curva_val = curv_map_desc[c_code]
+            # Menu pulito, mappatura secondo tabella (2=D, 3=B, 4=C)
+            curva_val = st.selectbox("Curva (POS.5)", ["Curva B", "Curva C", "Curva D"])
+            curv_map = {"Curva B": "3", "Curva C": "4", "Curva D": "2"}
+            c_code = curv_map[curva_val]
 
         with c2:
             # POS. 6: POLI
-            pol_opt = ["1", "2", "3", "4", "5"]
-            pol_code = st.selectbox("Poli (POS.6)", pol_opt)
-            # Mappa per il riepilogo testuale
-            pol_map_desc = {"1": "1P", "2": "2P", "3": "3P", "4": "4P", "5": "1P+N"}
-            poli_val = pol_map_desc[pol_code]
+            # Menu con "1P", "2P", ecc. Estraiamo il numero per il codice
+            poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P", "1P+N"])
+            pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4", "1P+N": "5"}
+            pol_code = pol_map[poli_val]
 
             # POS. 7-8: CORRENTE NOMINALE
-            amp_opt = ["06", "10", "16", "20", "25", "32", "40", "50", "63"]
-            amp_fixed = st.selectbox("Corrente Nominale (POS.7-8)", amp_opt)
-            amp_val = f"{int(amp_fixed)}A"
+            # Menu con "6A", "10A", ecc. Estraiamo il valore a due cifre
+            amp_val = st.selectbox("Corrente (POS.7-8)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
+            amp_map = {
+                "6A": "06", "10A": "10", "16A": "16", "20A": "20", 
+                "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
+            }
+            amp_fixed = amp_map[amp_val]
 
-        # Composizione finale del codice articolo
+        # Composizione finale: A9 + F + 7 + 3 + 1 + 06 = A9F73106
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        # Dati per i quadratini dell'analisi struttura
+        # Dati per l'analisi visiva
         pos_data = [
             ("1-2", fam_code), 
             ("3", serie_code), 
