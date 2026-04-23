@@ -79,7 +79,7 @@ with col_params:
             # POS. 5: CURVA
             # Menu pulito, mappatura secondo tabella (3=B, 4=C, 5=D)
             curva_val = st.selectbox("Curva (POS.5)", ["Curva B", "Curva C", "Curva D"])
-            curv_map = {"Curva B": "3", "Curva C": "4", "Curva D": "2"}
+            curv_map = {"Curva B": "3", "Curva C": "4", "Curva D": "5"}
             c_code = curv_map[curva_val]
 
         with c2:
