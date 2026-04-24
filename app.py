@@ -81,84 +81,71 @@ with col_params:
         codice_final = f"5S{serie_code}{p_code}{pol_code}{amp_fixed}{c_code}"
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
-    # --- LOGICA SCHNEIDER (Interattiva e Vincolata - Basata su PDF e Decoder) ---
-    if brand == "SCHNEIDER" and is_mcb:
-        c1, c2 = st.columns(2)
         
-        with c1:
-            # POS.1-2: Prefisso Gamma
-            gamma_val = st.selectbox("Gamma (POS.1-2)", ["Acti9 (A9)", "Resi9 (R9F)", "Resi9 Compatto (R9P)"])
-            fam_prefix = "A9" if "Acti9" in gamma_val else ("R9F" if "R9F" in gamma_val else "R9P")
+    # --- LOGICA SCHNEIDER (Abilitata solo se is_mcb è True) ---
+if brand == "SCHNEIDER" and is_mcb:
+    c1, c2 = st.columns(2)
+    with c1:
+        famiglia_val = st.selectbox(
+            "Famiglia (POS.3)",
+            ["F = iC60", "P = iC40", "N = C120 / NG125"]
+        )
+        famiglia_code = famiglia_val[0]
 
-            # POS.3: Famiglia (Vincolata alla Gamma)
-            if fam_prefix == "A9":
-                serie_opts = {"iC60 (Standard)": "F", "iC40 (Compatto)": "P", "C120/NG125": "N"}
-                serie_val = st.selectbox("Famiglia (POS.3)", list(serie_opts.keys()))
-                serie_code = serie_opts[serie_val]
-            else:
-                serie_code = "" # Per Resi9 il prefisso è già completo
-                serie_val = "Resi9"
+        pdi_val = st.selectbox(
+            "Potere di Interruzione (POS.4)",
+            ["6 kA (versione a)", "10 kA (versione N)", "15 kA (versione H)", "25 kA (versione L)"]
+        )
+        pdi_map = {
+            "6 kA (versione a)":  "4",
+            "10 kA (versione N)": "7",
+            "15 kA (versione H)": "8",
+            "25 kA (versione L)": "9",
+        }
+        pdi_code = pdi_map.get(pdi_val)
 
-            # POS.4: Livello Prestazione (Vincolato alla Serie)
-            if serie_code == "P": # iC40
-                pdi_map = {"iC40a (4.5 kA)": "4", "iC40N (6 kA)": "5", "iC40H (10 kA)": "6"}
-            elif serie_code == "N": # NG125
-                pdi_map = {"NG125a (25 kA)": "2", "NG125N (36 kA)": "3", "NG125H (70 kA)": "4", "NG125L (100 kA)": "5"}
-            elif fam_prefix.startswith("R9"): # Resi9
-                pdi_map = {"Base (4.5 kA)": "0", "Standard (6 kA)": "1"}
-            else: # iC60
-                pdi_map = {"versione 'a' (6 kA)": "4", "versione N (10 kA)": "7", "versione H (15 kA)": "8", "versione L (25 kA)": "9"}
-            
-            pdi_sel = st.selectbox("Prestazione (POS.4)", list(pdi_map.keys()))
-            p_code = pdi_map[pdi_sel]
+    with c2:
+        curva_val = st.selectbox(
+            "Curva di intervento (POS.5)",
+            ["Curva B (3–5 In)", "Curva C (5–10 In)", "Curva D (10–14 In)",
+             "Curva Z (3 In)", "Curva MA (solo magnetico)"]
+        )
+        curv_map = {
+            "Curva B (3–5 In)":         "3",
+            "Curva C (5–10 In)":        "4",
+            "Curva D (10–14 In)":       "5",
+            "Curva Z (3 In)":           "2",
+            "Curva MA (solo magnetico)": "0",
+        }
+        c_code = curv_map.get(curva_val)
 
-        with c2:
-            # POS.5: Curva (Vincolata)
-            if fam_prefix.startswith("R9"):
-                curv_map = {"Curva C": "4"}
-            else:
-                curv_map = {"Curva B": "3", "Curva C": "4", "Curva D": "5", "Curva Z": "2", "Curva MA": "0"}
-            
-            curva_val = st.selectbox("Curva (POS.5)", list(curv_map.keys()))
-            c_code = curv_map[curva_val]
+        poli_val = st.selectbox(
+            "Poli (POS.6)",
+            ["1P", "2P", "3P", "4P", "1P+N", "3P+N"]
+        )
+        pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4", "1P+N": "5", "3P+N": "7"}
+        pol_code = pol_map.get(poli_val)
 
-            # POS.6: Poli (Vincolo iC40/Resi9)
-            if serie_code == "P" or fam_prefix == "R9P":
-                pol_map = {"1P+N (Vigi)": "6", "3P+N (Vigi)": "7"}
-            else:
-                pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
-            
-            poli_val = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
-            pol_code = pol_map[poli_val]
+        amp_val = st.selectbox(
+            "Corrente nominale In (POS.7-8)",
+            ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A",
+             "20A", "25A", "32A", "40A", "50A", "63A", "80A", "100A", "125A"]
+        )
+        # Corrente: rimuove "A", padding a 2 cifre (0.5A → "70" come da catalogo)
+        amp_raw = amp_val.replace("A", "")
+        amp_special = {"0.5": "70"}          # 0.5 A usa codice speciale Schneider
+        amp_fixed = amp_special.get(amp_raw, amp_raw.zfill(2))
 
-            # POS.7-8: Corrente (Vincolata alla Serie)
-            if serie_code == "N":
-                amp_opts = ["10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A", "80A", "100A", "125A"]
-            elif serie_code == "P" or fam_prefix.startswith("R9"):
-                amp_opts = ["02A", "04A", "06A", "10A", "13A", "16A", "20A", "25A", "32A", "40A"]
-            else:
-                amp_opts = ["01A", "02A", "04A", "06A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
-            
-            amp_val = st.selectbox("Corrente (POS.7-8)", amp_opts)
-            amp_fixed = amp_val.replace("A", "").zfill(2)
-
-        # COMPOSIZIONE CODICE
-        codice_final = f"{fam_prefix}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
-        
-        # Struttura per visualizzazione quadratini (come Siemens)
-        pos_data = [
-            ("1-2", fam_prefix), 
-            ("3", serie_code if serie_code else "-"), 
-            ("4", p_code), 
-            ("5", c_code), 
-            ("6", pol_code), 
-            ("7-8", amp_fixed)
-        ]
-        
-        # Link ricerca ufficiale e Layout
-        st.markdown(f"### Codice Generato: `{codice_final}`")
-        url_base = "https://www.se.com/it/it/search/"
-        st.write(f"[Vai alla ricerca sul sito del produttore]({url_base}{codice_final})")    
+    codice_final = f"A9{famiglia_code}{pdi_code}{c_code}{pol_code}{amp_fixed}"
+    pos_data = [
+        ("1-2", "A9"),
+        ("3",   famiglia_code),
+        ("4",   pdi_code),
+        ("5",   c_code),
+        ("6",   pol_code),
+        ("7-8", amp_fixed),
+    ]
+    url_base = "https://www.se.com/it/it/product/range-presentation/" 
     
     
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
