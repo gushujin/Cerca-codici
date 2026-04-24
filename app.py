@@ -81,64 +81,87 @@ with col_params:
         codice_final = f"5S{serie_code}{p_code}{pol_code}{amp_fixed}{c_code}"
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
-
-    # --- LOGICA SCHNEIDER SUDDIVISA (Focus Resi9) ---
+    # --- LOGICA SCHNEIDER: STRUTTURA PER FAMIGLIE INDIPENDENTI ---
     elif brand == "SCHNEIDER" and is_mcb:
-        # Selettore di linea: isola completamente le logiche
-        linea = st.selectbox("Seleziona Linea Prodotto", [
-            "Resi9 (Residenziale)", 
+        # Selettore radice: definisce la "grammatica" del codice
+        linea = st.selectbox("Seleziona Famiglia Prodotto", [
+            "Resi9 (Civile/Residenziale)", 
             "Acti9 iC60 (Industriale)", 
             "Acti9 iC40 / iDPN (Compatto)"
         ])
         
         st.divider()
+        c1, c2 = st.columns(2)
 
-        # --- SOTTOBLOCCO RESI9 (Dati PDF Pag. A-2) ---
-        if linea == "Resi9 (Residenziale)":
-            c1, c2 = st.columns(2)
+        # --- 1. STRUTTURA RESI9 (Riferimento PDF A-2) ---
+        if linea == "Resi9 (Civile/Residenziale)":
             with c1:
                 fam_code, serie_code = "R9", "F"
-                
-                # POS 4-5: In Resi9 6000A Curva C è SEMPRE "12"
-                # In Resi9 4500A Curva C è SEMPRE "02"
-                pdi_val = st.selectbox("Potere Interruzione", ["6000 A", "4500 A"])
-                pc_code = "12" if pdi_val == "6000 A" else "02"
-                
-                st.caption("Nota: In Resi9, POS 4-5 '12' indica 6kA e Curva C")
+                # POS 4-5: In Resi9 Curva C + PDI sono accoppiati (12=6kA, 02=4.5kA)
+                pdi_sel = st.selectbox("PDI / Curva", ["6 kA - Curva C", "4.5 kA - Curva C"])
+                pc_code = "12" if "6 kA" in pdi_sel else "02"
+                st.caption("Grammatica Resi9: POS 4-5 fissa su PDI+Curva")
 
             with c2:
-                # POS 6: Poli (R9F usa 6 per 1P+N, 2 per 2P, 4 per 4P)
+                # POS 6: Poli (Specifici per serie R9F: 6=1P+N, 2=2P, 4=4P)
                 pol_map = {"1P+N": "6", "2P": "2", "4P": "4"}
                 poli_sel = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
                 pol_code = pol_map[poli_sel]
 
-                # POS 7-8: Amperaggi reali (PDF A-2)
+                # POS 7-8: Amperaggi reali da catalogo
                 amp_list = ["06", "10", "13", "16", "20", "25", "32", "40"]
                 amp_fixed = st.selectbox("Corrente (POS.7-8)", amp_list)
 
-            # Composizione Codice Reale Resi9 (es. R9F12616)
             codice_final = f"{fam_code}{serie_code}{pc_code}{pol_code}{amp_fixed}"
-            
-            # Struttura per analisi grafica (Layout Siemens)
-            pos_data = [
-                ("1-2", fam_code), ("3", serie_code), 
-                ("4-5", pc_code), ("6", pol_code), ("7-8", amp_fixed)
-            ]
+            pos_data = [("1-2", fam_code), ("3", serie_code), ("4-5", pc_code), ("6", pol_code), ("7-8", amp_fixed)]
 
-        # --- LOGICHE APERTE (Da implementare separatamente) ---
+        # --- 2. STRUTTURA iC60 (Riferimento PDF A-9 / A-11) ---
         elif linea == "Acti9 iC60 (Industriale)":
-            st.info("Seleziona i parametri per iC60 (Logica PDF A-9)")
-            # Qui andrà la logica specifica iC60...
-            codice_final, pos_data = "N/D", []
+            with c1:
+                fam_code, serie_code = "A9", "F"
+                pdi_sel = st.selectbox("Modello (POS.4)", ["iC60N (6kA)", "iC60H (10kA)", "iC60L (15kA)"])
+                p_code = {"iC60N (6kA)": "7", "iC60H (10kA)": "8", "iC60L (15kA)": "9"}[pdi_sel]
+                
+                curva_sel = st.selectbox("Curva (POS.5)", ["B", "C", "D"])
+                c_code = {"B": "3", "C": "4", "D": "5"}[curva_sel]
 
+            with c2:
+                poli_sel = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P"])
+                pol_code = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}[poli_sel]
+                
+                # Relazione iC60: 0.5A non esiste su 1P (PDF A-9)
+                amp_list = ["01", "02", "04", "06", "10", "16", "20", "25", "32", "40", "50", "63"]
+                if pol_code != "1":
+                    amp_list = ["70"] + amp_list # 70 = 0.5A
+                amp_fixed = st.selectbox("Corrente (POS.7-8)", amp_list)
+
+            codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+            pos_data = [("1-2", fam_code), ("3", serie_code), ("4", p_code), ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)]
+
+        # --- 3. STRUTTURA iC40 / iDPN (Riferimento PDF A-4 / A-5) ---
         elif linea == "Acti9 iC40 / iDPN (Compatto)":
-            st.info("Seleziona i parametri per iC40 (Logica PDF A-4)")
-            # Qui andrà la logica specifica iC40...
-            codice_final, pos_data = "N/D", []
+            with c1:
+                fam_code, serie_code = "A9", "P"
+                modello = st.selectbox("Modello", ["iC40N (6kA)", "iDPN (4.5kA)"])
+                # POS 4-5 per iC40: Curva C + PDI (54=6kA/C, 44=4.5kA/C)
+                pc_code = "54" if "iC40N" in modello else "44"
+                st.caption("Grammatica iC40: POS 4-5 accoppiate")
 
-        # Link alla ricerca ufficiale Schneider
+            with c2:
+                # Solo Neutro integrato (PDF A-4)
+                poli_sel = st.selectbox("Poli (POS.6)", ["1P+N", "3P+N"])
+                pol_code = {"1P+N": "6", "3P+N": "7"}[poli_sel]
+                
+                amp_list = ["02", "04", "06", "10", "16", "20", "25", "32", "40"]
+                amp_fixed = st.selectbox("Corrente (POS.7-8)", amp_list)
+
+            codice_final = f"{fam_code}{serie_code}{pc_code}{pol_code}{amp_fixed}"
+            pos_data = [("1-2", fam_code), ("3", serie_code), ("4-5", pc_code), ("6", pol_code), ("7-8", amp_fixed)]
+
+        # Link alla ricerca ufficiale
         url_base = "https://www.se.com/it/it/search/"
-        
+
+    
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
     elif brand == "HAGER" and is_mcb:
         c1, c2 = st.columns(2)
