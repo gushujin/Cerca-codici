@@ -82,83 +82,77 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-    # --- LOGICA SCHNEIDER AGGIORNATA (Relazioni incrociate totali da PDF) ---
+    # --- LOGICA SCHNEIDER (Basata su Catalogo PDF) ---
     elif brand == "SCHNEIDER" and is_mcb:
         c1, c2 = st.columns(2)
         
         with c1:
-            # 1. Selezione Famiglia
+            # 1. Famiglia (A9 = Acti9, R9 = Resi9)
             fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
             
-            # 2. Selezione Serie (Filtro basato su Famiglia)
+            # 2. Serie (POS.3) - Relazioni reali dal catalogo
             if fam_code == "R9":
-                serie_options = {"Resi9": "F"}
+                serie_map = {"Resi9 (Civile)": "F"}
             else:
-                serie_options = {
+                # Dal PDF: F=iC60N, H=iC60H, L=iC60L, P=iC40/iDPN
+                serie_map = {
                     "iC60N (Standard)": "F", 
                     "iC60H (High)": "H", 
                     "iC60L (Limiters)": "L", 
-                    "iC40N (Compact)": "P", 
-                    "iDPN": "N"
+                    "iC40N / iDPN (Compact)": "P"
                 }
-            serie_sel = st.selectbox("Serie (POS.3)", list(serie_options.keys()))
-            serie_code = serie_options[serie_sel]
+            serie_sel = st.selectbox("Serie (POS.3)", list(serie_map.keys()))
+            serie_code = serie_map[serie_sel]
 
-            # 3. Selezione PDI (Filtro basato su Serie - Dati PDF A-9/A-11)
+            # 3. PDI (POS.4) - Relazioni reali
             if "iC60L" in serie_sel:
                 pdi_map = {"15 kA": "8", "25 kA": "9"}
             elif "iC60H" in serie_sel:
                 pdi_map = {"10 kA": "7", "15 kA": "8"}
-            elif "iC60N" in serie_sel or "iC40N" in serie_sel:
+            elif "iC40" in serie_sel or "iDPN" in serie_sel:
+                pdi_map = {"4.5 kA": "3", "6 kA": "6"} # Tipico iC40/DPN
+            else: # iC60N o Resi9
                 pdi_map = {"6 kA": "6", "10 kA": "7"}
-            else: # Resi9 o DPN standard
-                pdi_map = {"4.5 kA": "3", "6 kA": "6"}
             
             pdi_val = st.selectbox("PDI (POS.4)", list(pdi_map.keys()))
             p_code = pdi_map[pdi_val]
 
-            # 4. Curva (Filtro basato su Serie)
-            if "Resi9" in serie_sel:
-                curva_options = {"Curva C": "4"}
-            elif "iC40" in serie_sel:
-                curva_options = {"Curva B": "3", "Curva C": "4"}
-            else: # iC60 supporta tutto
-                curva_options = {"Curva B": "3", "Curva C": "4", "Curva D": "5"}
-            
-            curva_sel = st.selectbox("Curva (POS.5)", list(curva_options.keys()))
-            c_code = curva_options[curva_sel]
+            # 4. Curva (POS.5) - In Schneider la curva precede i poli nel codice
+            curva_map = {"Curva B": "3", "Curva C": "4", "Curva D": "5"}
+            curva_sel = st.selectbox("Curva (POS.5)", list(curva_map.keys()))
+            c_code = curva_map[curva_sel]
 
         with c2:
-            # 5. Poli (Relazione critica: iC40/DPN sono solo combinati)
-            if "DPN" in serie_sel or "iC40" in serie_sel:
-                pol_map = {"1P+N": "5", "3P+N": "6"}
+            # 5. Poli (POS.6) - RELAZIONE CRITICA DAL PDF
+            # Gli interruttori iC40 e iDPN (Serie P) sono tipicamente combinati
+            if "iC40" in serie_sel or "iDPN" in serie_sel:
+                pol_map = {"1P+N (Salvaspazio)": "5", "3P+N (Salvaspazio)": "6"}
             else:
                 pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
             
             poli_val = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
             pol_code = pol_map[poli_val]
 
-            # 6. Amperaggio (Filtro REALE basato sulla serie)
-            # Dati PDF: iC60 arriva a 63A, Resi9 e iC40 si fermano a 40A o 32A in base ai moduli
-            if "iC40" in serie_sel:
-                amp_list = ["2A", "4A", "6A", "10A", "13A", "16A", "20A", "25A", "32A", "40A"]
-            elif "Resi9" in serie_sel:
-                amp_list = ["6A", "10A", "16A", "20A", "25A", "32A"]
-            else: # Serie iC60 (Completa)
-                amp_list = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "13A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+            # 6. Corrente (POS.7-8) - RELAZIONE REALE AMBIENTE/TAGLIO
+            # La serie compatta (P) arriva raramente a 63A, si ferma a 40A (A-4 / A-5 PDF)
+            if "iC40" in serie_sel or "Resi9" in serie_sel:
+                amp_list = ["2A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A"]
+            else:
+                amp_list = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
             
             amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
             
-            # Mappatura speciale Amperaggi
+            # Mapping speciale Schneider per piccoli tagli e standard
             amp_special_map = {
                 "0.5A": "70", "1A": "01", "2A": "02", "3A": "03", "4A": "04", 
-                "6A": "06", "10A": "10", "13A": "13", "16A": "16", "20A": "20", 
-                "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
+                "6A": "06", "10A": "10", "16A": "16", "20A": "20", "25A": "25", 
+                "32A": "32", "40A": "40", "50A": "50", "63A": "63"
             }
             amp_fixed = amp_special_map[amp_sel]
 
-        # Composizione finale
+        # Composizione finale (Struttura corretta: FAM + SERIE + PDI + CURVA + POLI + AMP)
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+        
         pos_data = [
             ("1-2", fam_code), ("3", serie_code), ("4", p_code), 
             ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
