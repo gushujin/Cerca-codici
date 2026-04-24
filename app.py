@@ -83,7 +83,7 @@ with col_params:
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
    # --- LOGICA SCHNEIDER AGGIORNATA ---
-    elif brand == "SCHNEIDER" and is_mcb:
+   elif brand == "SCHNEIDER" and is_mcb:
     c1, c2 = st.columns(2)
     with c1:
         fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
