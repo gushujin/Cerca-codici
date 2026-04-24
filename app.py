@@ -93,89 +93,75 @@ with col_params:
         st.divider()
         c1, c2 = st.columns(2)
 
-    # --- LOGICA SCHNEIDER (Basata sulla grammatica A9F / R9F) ---
+    # --- LOGICA SCHNEIDER (Basata su schneider_decoder.docx) ---
     elif brand == "SCHNEIDER" and is_mcb:
         c1, c2 = st.columns(2)
         
         with c1:
-            # POS 1-2: Prefisso gamma
-            gamma_sel = st.selectbox("Gamma (POS.1-2)", ["Acti9 (A9)", "Resi9 (R9)"])
-            fam_code = "A9" if "Acti9" in gamma_sel else "R9"
+            # 1. Prefisso gamma (Pos. 1-2)
+            gamma_opts = {"Acti9 / Multi9": "A9", "Resi9 (Standard)": "R9F", "Resi9 (Compatto)": "R9P"}
+            gamma_sel = st.selectbox("Gamma (POS.1-2)", list(gamma_opts.keys()))
+            fam_prefix = gamma_opts[gamma_sel]
 
-            # POS 3: Famiglia prodotto (Serie fisica)
-            if fam_code == "A9":
-                serie_map = {"iC60": "F", "iC40": "P", "C120/NG125": "N"}
+            # 2. Famiglia prodotto (Pos. 3) - Solo per Acti9 (A9)
+            if fam_prefix == "A9":
+                serie_map = {"iC60": "F", "iC40": "P", "C120 / NG125": "N"}
+                serie_sel = st.selectbox("Famiglia (POS.3)", list(serie_map.keys()))
+                serie_code = serie_map[serie_sel]
             else:
-                serie_map = {"Resi9 Standard": "F", "Resi9 Compatto": "P"}
-            
-            serie_sel = st.selectbox("Serie (POS.3)", list(serie_map.keys()))
-            serie_code = serie_map[serie_sel]
+                # Per Resi9 il prefisso include già la famiglia, pos 3 è vuota nella stringa finale se gestita così
+                serie_code = "" 
 
-            # POS 4: Livello di prestazione (Potere di interruzione)
-            if fam_code == "R9":
-                pdi_map = {"Standard (6 kA)": "1", "Base (4.5 kA)": "0"}
-            else:
-                pdi_map = {
-                    "Versione 'a' (6 kA)": "4",
-                    "Versione N (10 kA)": "7",
-                    "Versione H (15 kA)": "8",
-                    "Versione L (25 kA)": "9"
-                }
+            # 3. Livello di prestazione / PDI (Pos. 4)
+            if serie_code == "N": # C120 / NG125
+                pdi_map = {"NG125a (25kA)": "2", "NG125N (36kA)": "3", "NG125H (70kA)": "4", "NG125L (100kA)": "5"}
+            elif serie_code == "P": # iC40
+                pdi_map = {"iC40a (4.5kA)": "4", "iC40N (6kA)": "5", "iC40H (10kA)": "6"}
+            else: # iC60 o Resi9
+                pdi_map = {"versione 'a' (6 kA)": "4", "versione N (10 kA)": "7", "versione H (15 kA)": "8", "versione L (25 kA)": "9"}
             
-            pdi_sel = st.selectbox("PDI (POS.4)", list(pdi_map.keys()))
+            pdi_sel = st.selectbox("Livello Prestazione (POS.4)", list(pdi_map.keys()))
             p_code = pdi_map[pdi_sel]
 
-            # POS 5: Curva di intervento
-            if fam_code == "R9":
-                curva_map = {"Curva C": "4"} # Resi9 solitamente fissa su C
-            else:
-                curva_map = {
-                    "Curva B (3–5 In)": "3",
-                    "Curva C (5–10 In)": "4",
-                    "Curva D (10–14 In)": "5",
-                    "Curva Z": "2",
-                    "Curva MA (Magnetico)": "0"
-                }
-            
+            # 4. Curva di intervento (Pos. 5)
+            curva_map = {
+                "Curva B (3–5 In)": "3", 
+                "Curva C (5–10 In)": "4", 
+                "Curva D (10–14 In)": "5", 
+                "Curva Z (2–3 In)": "2", 
+                "Curva MA (Magnetico)": "0"
+            }
             curva_sel = st.selectbox("Curva (POS.5)", list(curva_map.keys()))
             c_code = curva_map[curva_sel]
 
         with c2:
-            # POS 6: Numero di poli
-            # Se serie iC40 o Resi9, limitiamo a configurazioni comuni con neutro
-            if serie_code == "P":
-                poli_map = {"1P+N": "5", "3P+N": "6"}
+            # 5. Numero di poli (Pos. 6)
+            if serie_code == "P": # iC40 ha mappature specifiche
+                pol_map = {"1P+N": "6", "3P+N": "7"}
             else:
-                poli_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
-                
-            poli_sel = st.selectbox("Poli (POS.6)", list(poli_map.keys()))
-            pol_code = poli_map[poli_sel]
-
-            # POS 7-8: Corrente nominale (Ampere)
-            # Filtro: iC40/Resi9 max 40A, iC60 fino a 63A
-            if serie_code == "P":
-                amp_list = ["2A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A"]
-            else:
-                amp_list = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+                pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
             
-            amp_val = st.selectbox("Corrente (POS.7-8)", amp_list)
-            
-            # Formattazione speciale per 0.5A (codice 70) o zfill per gli altri
-            if amp_val == "0.5A":
-                amp_fixed = "70"
-            else:
-                amp_fixed = amp_val.replace("A", "").zfill(2)
+            poli_sel = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
+            pol_code = pol_map[poli_sel]
 
-        # COMPOSIZIONE FINALE
-        codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+            # 6. Corrente nominale (Pos. 7-8)
+            if serie_code == "N": # C120/NG125 arrivano a 125A
+                amp_list = ["10", "16", "20", "25", "32", "40", "50", "63", "80", "100", "125"]
+            elif serie_code == "P": # iC40 max 40A
+                amp_list = ["02", "04", "06", "10", "16", "20", "25", "32", "40"]
+            else: # iC60 e altri
+                amp_list = ["01", "02", "03", "04", "06", "10", "16", "20", "25", "32", "40", "50", "63"]
+            
+            amp_fixed = st.selectbox("Corrente In [A] (POS.7-8)", amp_list)
+
+        # COMPOSIZIONE FINALE (A9 + F + 7 + 4 + 1 + 16)
+        codice_final = f"{fam_prefix}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        # Struttura per il layout grafico (pos_data)
+        # Layout grafico per il tool
         pos_data = [
-            ("1-2", fam_code), ("3", serie_code), ("4", p_code), 
+            ("1-2", fam_prefix), ("3", serie_code), ("4", p_code), 
             ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
         ]
-        
-        # Link alla ricerca ufficiale Schneider
         url_base = "https://www.se.com/it/it/search/"    
 
     
