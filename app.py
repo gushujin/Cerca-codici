@@ -82,54 +82,62 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-    # --- LOGICA SCHNEIDER: SOTTOBLOCCO RESI9 (Dati da PDF pag. A-2) ---
+    # --- LOGICA SCHNEIDER SUDDIVISA (Focus Resi9) ---
     elif brand == "SCHNEIDER" and is_mcb:
-        # Selettore di linea per mantenere il layout Siemens
-        linea = st.selectbox("Seleziona Linea Prodotto", ["Resi9 (Residenziale)", "Acti9 iC60 (Industriale)", "Acti9 iC40 / iDPN"])
+        # Selettore di linea: isola completamente le logiche
+        linea = st.selectbox("Seleziona Linea Prodotto", [
+            "Resi9 (Residenziale)", 
+            "Acti9 iC60 (Industriale)", 
+            "Acti9 iC40 / iDPN (Compatto)"
+        ])
+        
+        st.divider()
 
+        # --- SOTTOBLOCCO RESI9 (Dati PDF Pag. A-2) ---
         if linea == "Resi9 (Residenziale)":
-            st.divider()
             c1, c2 = st.columns(2)
-
             with c1:
-                # La famiglia e serie per Resi9 standard è sempre R9F
                 fam_code, serie_code = "R9", "F"
                 
-                # POS 4-5: In Resi9 la combinazione PDI + CURVA è fissa
-                # Secondo PDF: 6000A Curva C = codice "12"
-                pdi_curva = st.selectbox("PDI / Curva", ["6 kA - Curva C", "4.5 kA - Curva C"])
-                pc_code = "12" if "6 kA" in pdi_curva else "02"
+                # POS 4-5: In Resi9 6000A Curva C è SEMPRE "12"
+                # In Resi9 4500A Curva C è SEMPRE "02"
+                pdi_val = st.selectbox("Potere Interruzione", ["6000 A", "4500 A"])
+                pc_code = "12" if pdi_val == "6000 A" else "02"
                 
+                st.caption("Nota: In Resi9, POS 4-5 '12' indica 6kA e Curva C")
+
             with c2:
-                # POS 6: Poli (In Resi9: 2=2P, 4=4P, 6=1P+N) 
-                # ATTENZIONE: Il PDF mostra che 1P+N usa il '6' in POS 6 per la serie R9F
-                poli_map = {"1P+N": "6", "2P": "2", "4P": "4"}
-                poli_sel = st.selectbox("Poli (POS.6)", list(poli_map.keys()))
-                pol_code = poli_map[poli_sel]
+                # POS 6: Poli (R9F usa 6 per 1P+N, 2 per 2P, 4 per 4P)
+                pol_map = {"1P+N": "6", "2P": "2", "4P": "4"}
+                poli_sel = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
+                pol_code = pol_map[poli_sel]
 
-                # POS 7-8: Amperaggi reali da tabella PDF A-2
-                amp_list = ["06A", "10A", "13A", "16A", "20A", "25A", "32A", "40A"]
-                amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
-                amp_fixed = amp_sel.replace("A", "")
+                # POS 7-8: Amperaggi reali (PDF A-2)
+                amp_list = ["06", "10", "13", "16", "20", "25", "32", "40"]
+                amp_fixed = st.selectbox("Corrente (POS.7-8)", amp_list)
 
-            # COMPOSIZIONE CODICE RESI9 (Esempio: R9F 12 6 16)
+            # Composizione Codice Reale Resi9 (es. R9F12616)
             codice_final = f"{fam_code}{serie_code}{pc_code}{pol_code}{amp_fixed}"
             
-            # Layout grafico uniformato
+            # Struttura per analisi grafica (Layout Siemens)
             pos_data = [
                 ("1-2", fam_code), ("3", serie_code), 
                 ("4-5", pc_code), ("6", pol_code), ("7-8", amp_fixed)
             ]
-            url_base = "https://www.se.com/it/it/search/"
 
-        # Spazio per le altre logiche (da implementare con i rispettivi PDF A-4 e A-9)
+        # --- LOGICHE APERTE (Da implementare separatamente) ---
         elif linea == "Acti9 iC60 (Industriale)":
-            st.info("Logica iC60 (PDF A-9) in fase di configurazione...")
+            st.info("Seleziona i parametri per iC60 (Logica PDF A-9)")
+            # Qui andrà la logica specifica iC60...
             codice_final, pos_data = "N/D", []
-            
-        elif linea == "Acti9 iC40 / iDPN":
-            st.info("Logica iC40 (PDF A-4) in fase di configurazione...")
+
+        elif linea == "Acti9 iC40 / iDPN (Compatto)":
+            st.info("Seleziona i parametri per iC40 (Logica PDF A-4)")
+            # Qui andrà la logica specifica iC40...
             codice_final, pos_data = "N/D", []
+
+        # Link alla ricerca ufficiale Schneider
+        url_base = "https://www.se.com/it/it/search/"
         
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
     elif brand == "HAGER" and is_mcb:
