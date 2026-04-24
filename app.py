@@ -82,66 +82,54 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-    # --- LOGICA SCHNEIDER: SOTTOBLOCCO RESI9 ---
+    # --- LOGICA SCHNEIDER: SOTTOBLOCCO RESI9 (Dati da PDF pag. A-2) ---
     elif brand == "SCHNEIDER" and is_mcb:
-        # Selettore di linea per mantenere la struttura aperta ad altre famiglie
-        linea = st.selectbox("Seleziona Linea Prodotto", ["Resi9 (Residenziale)", "Acti9 iC60", "Acti9 iC40/iDPN"])
+        # Selettore di linea per mantenere il layout Siemens
+        linea = st.selectbox("Seleziona Linea Prodotto", ["Resi9 (Residenziale)", "Acti9 iC60 (Industriale)", "Acti9 iC40 / iDPN"])
 
         if linea == "Resi9 (Residenziale)":
             st.divider()
             c1, c2 = st.columns(2)
 
             with c1:
-                # 1. POS 1-2-3: Famiglia e Serie (Fissa per Resi9 standard)
+                # La famiglia e serie per Resi9 standard è sempre R9F
                 fam_code, serie_code = "R9", "F"
                 
-                # 2. POS 4: Potere di Interruzione (PDI)
-                # Resi9 standard in Italia è quasi esclusivamente 4.5kA o 6kA
-                pdi_map = {"6 kA": "1", "4.5 kA": "0"}
-                pdi_val = st.selectbox("PDI (POS.4)", list(pdi_map.keys()))
-                p_code = pdi_map[pdi_val]
-
-                # 3. POS 5: Curva di intervento
-                # La gamma Resi9 usa il codice "2" per identificare la Curva C
-                curva_sel = st.selectbox("Curva (POS.5)", ["C"])
-                c_code = "2" 
-                st.caption("Nota: In gamma Resi9, il codice '2' identifica la Curva C")
-
-            with c2:
-                # 4. POS 6: Poli (Relazione reale PDF A-2)
-                # Resi9 non esiste in versione 1P o 3P standard, solo 1P+N, 2P o 4P
-                pol_map = {"1P+N": "5", "2P": "2", "4P": "4"}
-                poli_sel = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
-                pol_code = pol_map[poli_sel]
-
-                # 5. POS 7-8: Corrente Nominale (Ampere)
-                # Filtro basato su disponibilità reale a catalogo Resi9
-                amp_list = ["6A", "10A", "13A", "16A", "20A", "25A", "32A", "40A"]
-                amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
+                # POS 4-5: In Resi9 la combinazione PDI + CURVA è fissa
+                # Secondo PDF: 6000A Curva C = codice "12"
+                pdi_curva = st.selectbox("PDI / Curva", ["6 kA - Curva C", "4.5 kA - Curva C"])
+                pc_code = "12" if "6 kA" in pdi_curva else "02"
                 
-                # Mappatura standard (zfill 2)
-                amp_fixed = amp_sel.replace("A", "").zfill(2)
+            with c2:
+                # POS 6: Poli (In Resi9: 2=2P, 4=4P, 6=1P+N) 
+                # ATTENZIONE: Il PDF mostra che 1P+N usa il '6' in POS 6 per la serie R9F
+                poli_map = {"1P+N": "6", "2P": "2", "4P": "4"}
+                poli_sel = st.selectbox("Poli (POS.6)", list(poli_map.keys()))
+                pol_code = poli_map[poli_sel]
 
-            # --- GENERAZIONE CODICE RESI9 ---
-            codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+                # POS 7-8: Amperaggi reali da tabella PDF A-2
+                amp_list = ["06A", "10A", "13A", "16A", "20A", "25A", "32A", "40A"]
+                amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
+                amp_fixed = amp_sel.replace("A", "")
+
+            # COMPOSIZIONE CODICE RESI9 (Esempio: R9F 12 6 16)
+            codice_final = f"{fam_code}{serie_code}{pc_code}{pol_code}{amp_fixed}"
             
-            # Struttura per analisi grafica
+            # Layout grafico uniformato
             pos_data = [
-                ("1-2", fam_code), ("3", serie_code), ("4", p_code), 
-                ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
+                ("1-2", fam_code), ("3", serie_code), 
+                ("4-5", pc_code), ("6", pol_code), ("7-8", amp_fixed)
             ]
             url_base = "https://www.se.com/it/it/search/"
 
-        # Spazio predisposto per le altre logiche
-        elif linea == "Acti9 iC60":
-            st.warning("Logica iC60 da inserire qui...")
-            codice_final = "N/D"
-            pos_data = []
-
-        elif linea == "Acti9 iC40/iDPN":
-            st.warning("Logica iC40/iDPN da inserire qui...")
-            codice_final = "N/D"
-            pos_data = []
+        # Spazio per le altre logiche (da implementare con i rispettivi PDF A-4 e A-9)
+        elif linea == "Acti9 iC60 (Industriale)":
+            st.info("Logica iC60 (PDF A-9) in fase di configurazione...")
+            codice_final, pos_data = "N/D", []
+            
+        elif linea == "Acti9 iC40 / iDPN":
+            st.info("Logica iC40 (PDF A-4) in fase di configurazione...")
+            codice_final, pos_data = "N/D", []
         
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
     elif brand == "HAGER" and is_mcb:
