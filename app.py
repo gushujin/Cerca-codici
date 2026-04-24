@@ -93,50 +93,59 @@ with col_params:
         st.divider()
         c1, c2 = st.columns(2)
 
-    # --- LOGICA SCHNEIDER (Basata su schneider_decoder.docx) ---
+    # --- LOGICA SCHNEIDER CON VINCOLI DINAMICI (Basata su schneider_decoder.docx e PDF A-2/A-31) ---
     elif brand == "SCHNEIDER" and is_mcb:
+        st.subheader("Configuratore Schneider Electric")
         c1, c2 = st.columns(2)
         
         with c1:
-            # 1. Prefisso gamma (Pos. 1-2)
-            gamma_opts = {"Acti9 / Multi9": "A9", "Resi9 (Standard)": "R9F", "Resi9 (Compatto)": "R9P"}
+            # 1. POS 1-2: Prefisso Gamma
+            gamma_opts = {
+                "Acti9 / Multi9 (Standard)": "A9", 
+                "Resi9 (Residenziale - R9F)": "R9F", 
+                "Resi9 (Compatto - R9P)": "R9P"
+            }
             gamma_sel = st.selectbox("Gamma (POS.1-2)", list(gamma_opts.keys()))
             fam_prefix = gamma_opts[gamma_sel]
 
-            # 2. Famiglia prodotto (Pos. 3) - Solo per Acti9 (A9)
+            # 2. POS 3: Famiglia Prodotto (Vincolata alla Gamma)
             if fam_prefix == "A9":
-                serie_map = {"iC60": "F", "iC40": "P", "C120 / NG125": "N"}
+                serie_map = {"iC60 (Industriale)": "F", "iC40 (Compatto)": "P", "C120 / NG125": "N"}
                 serie_sel = st.selectbox("Famiglia (POS.3)", list(serie_map.keys()))
                 serie_code = serie_map[serie_sel]
             else:
-                # Per Resi9 il prefisso include già la famiglia, pos 3 è vuota nella stringa finale se gestita così
-                serie_code = "" 
+                # Per Resi9 il codice serie è già nel prefisso (R9F/R9P), posizione 3 vuota
+                serie_code = ""
+                serie_sel = "Resi9"
 
-            # 3. Livello di prestazione / PDI (Pos. 4)
-            if serie_code == "N": # C120 / NG125
+            # 3. POS 4: Livello di Prestazione (PDI) - Vincolato alla Serie
+            if serie_code == "N": # Serie C120 / NG125 (Pag. A-26/30 PDF)
                 pdi_map = {"NG125a (25kA)": "2", "NG125N (36kA)": "3", "NG125H (70kA)": "4", "NG125L (100kA)": "5"}
-            elif serie_code == "P": # iC40
+            elif serie_code == "P": # Serie iC40 (Pag. A-4/5 PDF)
                 pdi_map = {"iC40a (4.5kA)": "4", "iC40N (6kA)": "5", "iC40H (10kA)": "6"}
-            else: # iC60 o Resi9
-                pdi_map = {"versione 'a' (6 kA)": "4", "versione N (10 kA)": "7", "versione H (15 kA)": "8", "versione L (25 kA)": "9"}
+            elif fam_prefix.startswith("R9"): # Resi9 (Pag. A-2 PDF)
+                pdi_map = {"Resi9 (4.5kA)": "0", "Resi9 (6kA)": "1"}
+            else: # Serie iC60 (Pag. A-8/11 PDF)
+                pdi_map = {"iC60a (6kA)": "4", "iC60N (10kA)": "7", "iC60H (15kA)": "8", "iC60L (25kA)": "9"}
             
-            pdi_sel = st.selectbox("Livello Prestazione (POS.4)", list(pdi_map.keys()))
+            pdi_sel = st.selectbox("Livello Prestazione / PDI (POS.4)", list(pdi_map.keys()))
             p_code = pdi_map[pdi_sel]
 
-            # 4. Curva di intervento (Pos. 5)
-            curva_map = {
-                "Curva B (3–5 In)": "3", 
-                "Curva C (5–10 In)": "4", 
-                "Curva D (10–14 In)": "5", 
-                "Curva Z (2–3 In)": "2", 
-                "Curva MA (Magnetico)": "0"
-            }
+            # 4. POS 5: Curva di Intervento (Vincolata)
+            if fam_prefix.startswith("R9"):
+                curva_map = {"Curva C": "4"} # Resi9 standard
+            else:
+                curva_map = {
+                    "Curva B (3–5 In)": "3", "Curva C (5–10 In)": "4", 
+                    "Curva D (10–14 In)": "5", "Curva Z (Elettronica)": "2", 
+                    "Curva MA (Magnetico)": "0"
+                }
             curva_sel = st.selectbox("Curva (POS.5)", list(curva_map.keys()))
             c_code = curva_map[curva_sel]
 
         with c2:
-            # 5. Numero di poli (Pos. 6)
-            if serie_code == "P": # iC40 ha mappature specifiche
+            # 5. POS 6: Numero Poli (Vincoli rigidi da catalogo)
+            if serie_code == "P" or fam_prefix == "R9P": # iC40 e Resi9 Compatto sono solo 1P+N o 3P+N
                 pol_map = {"1P+N": "6", "3P+N": "7"}
             else:
                 pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
@@ -144,24 +153,26 @@ with col_params:
             poli_sel = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
             pol_code = pol_map[poli_sel]
 
-            # 6. Corrente nominale (Pos. 7-8)
-            if serie_code == "N": # C120/NG125 arrivano a 125A
+            # 6. POS 7-8: Corrente Nominale (Vincolata alla taglia della famiglia)
+            if serie_code == "N": # Taglie grandi (PDF A-26)
                 amp_list = ["10", "16", "20", "25", "32", "40", "50", "63", "80", "100", "125"]
-            elif serie_code == "P": # iC40 max 40A
-                amp_list = ["02", "04", "06", "10", "16", "20", "25", "32", "40"]
-            else: # iC60 e altri
+            elif serie_code == "P" or fam_prefix.startswith("R9"): # Taglie compatte (PDF A-4)
+                amp_list = ["02", "04", "06", "10", "13", "16", "20", "25", "32", "40"]
+            else: # iC60 standard (PDF A-9)
                 amp_list = ["01", "02", "03", "04", "06", "10", "16", "20", "25", "32", "40", "50", "63"]
             
             amp_fixed = st.selectbox("Corrente In [A] (POS.7-8)", amp_list)
 
-        # COMPOSIZIONE FINALE (A9 + F + 7 + 4 + 1 + 16)
+        # COMPOSIZIONE CODICE
         codice_final = f"{fam_prefix}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        # Layout grafico per il tool
+        # Struttura per il layout grafico (uniformato a blocco Siemens)
         pos_data = [
-            ("1-2", fam_prefix), ("3", serie_code), ("4", p_code), 
-            ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
+            ("1-2", fam_prefix), ("3", serie_code if serie_code else "-"), 
+            ("4", p_code), ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
         ]
+        
+        # Link ricerca tecnica Schneider
         url_base = "https://www.se.com/it/it/search/"    
 
     
