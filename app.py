@@ -93,73 +93,90 @@ with col_params:
         st.divider()
         c1, c2 = st.columns(2)
 
-        # --- 1. STRUTTURA RESI9 (Riferimento PDF A-2) ---
-        if linea == "Resi9 (Civile/Residenziale)":
-            with c1:
-                fam_code, serie_code = "R9", "F"
-                # POS 4-5: In Resi9 Curva C + PDI sono accoppiati (12=6kA, 02=4.5kA)
-                pdi_sel = st.selectbox("PDI / Curva", ["6 kA - Curva C", "4.5 kA - Curva C"])
-                pc_code = "12" if "6 kA" in pdi_sel else "02"
-                st.caption("Grammatica Resi9: POS 4-5 fissa su PDI+Curva")
+    # --- LOGICA SCHNEIDER (Basata sulla grammatica A9F / R9F) ---
+    elif brand == "SCHNEIDER" and is_mcb:
+        c1, c2 = st.columns(2)
+        
+        with c1:
+            # POS 1-2: Prefisso gamma
+            gamma_sel = st.selectbox("Gamma (POS.1-2)", ["Acti9 (A9)", "Resi9 (R9)"])
+            fam_code = "A9" if "Acti9" in gamma_sel else "R9"
 
-            with c2:
-                # POS 6: Poli (Specifici per serie R9F: 6=1P+N, 2=2P, 4=4P)
-                pol_map = {"1P+N": "6", "2P": "2", "4P": "4"}
-                poli_sel = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
-                pol_code = pol_map[poli_sel]
+            # POS 3: Famiglia prodotto (Serie fisica)
+            if fam_code == "A9":
+                serie_map = {"iC60": "F", "iC40": "P", "C120/NG125": "N"}
+            else:
+                serie_map = {"Resi9 Standard": "F", "Resi9 Compatto": "P"}
+            
+            serie_sel = st.selectbox("Serie (POS.3)", list(serie_map.keys()))
+            serie_code = serie_map[serie_sel]
 
-                # POS 7-8: Amperaggi reali da catalogo
-                amp_list = ["06", "10", "13", "16", "20", "25", "32", "40"]
-                amp_fixed = st.selectbox("Corrente (POS.7-8)", amp_list)
+            # POS 4: Livello di prestazione (Potere di interruzione)
+            if fam_code == "R9":
+                pdi_map = {"Standard (6 kA)": "1", "Base (4.5 kA)": "0"}
+            else:
+                pdi_map = {
+                    "Versione 'a' (6 kA)": "4",
+                    "Versione N (10 kA)": "7",
+                    "Versione H (15 kA)": "8",
+                    "Versione L (25 kA)": "9"
+                }
+            
+            pdi_sel = st.selectbox("PDI (POS.4)", list(pdi_map.keys()))
+            p_code = pdi_map[pdi_sel]
 
-            codice_final = f"{fam_code}{serie_code}{pc_code}{pol_code}{amp_fixed}"
-            pos_data = [("1-2", fam_code), ("3", serie_code), ("4-5", pc_code), ("6", pol_code), ("7-8", amp_fixed)]
+            # POS 5: Curva di intervento
+            if fam_code == "R9":
+                curva_map = {"Curva C": "4"} # Resi9 solitamente fissa su C
+            else:
+                curva_map = {
+                    "Curva B (3–5 In)": "3",
+                    "Curva C (5–10 In)": "4",
+                    "Curva D (10–14 In)": "5",
+                    "Curva Z": "2",
+                    "Curva MA (Magnetico)": "0"
+                }
+            
+            curva_sel = st.selectbox("Curva (POS.5)", list(curva_map.keys()))
+            c_code = curva_map[curva_sel]
 
-        # --- 2. STRUTTURA iC60 (Riferimento PDF A-9 / A-11) ---
-        elif linea == "Acti9 iC60 (Industriale)":
-            with c1:
-                fam_code, serie_code = "A9", "F"
-                pdi_sel = st.selectbox("Modello (POS.4)", ["iC60N (6kA)", "iC60H (10kA)", "iC60L (15kA)"])
-                p_code = {"iC60N (6kA)": "7", "iC60H (10kA)": "8", "iC60L (15kA)": "9"}[pdi_sel]
+        with c2:
+            # POS 6: Numero di poli
+            # Se serie iC40 o Resi9, limitiamo a configurazioni comuni con neutro
+            if serie_code == "P":
+                poli_map = {"1P+N": "5", "3P+N": "6"}
+            else:
+                poli_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
                 
-                curva_sel = st.selectbox("Curva (POS.5)", ["B", "C", "D"])
-                c_code = {"B": "3", "C": "4", "D": "5"}[curva_sel]
+            poli_sel = st.selectbox("Poli (POS.6)", list(poli_map.keys()))
+            pol_code = poli_map[poli_sel]
 
-            with c2:
-                poli_sel = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P"])
-                pol_code = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}[poli_sel]
-                
-                # Relazione iC60: 0.5A non esiste su 1P (PDF A-9)
-                amp_list = ["01", "02", "04", "06", "10", "16", "20", "25", "32", "40", "50", "63"]
-                if pol_code != "1":
-                    amp_list = ["70"] + amp_list # 70 = 0.5A
-                amp_fixed = st.selectbox("Corrente (POS.7-8)", amp_list)
+            # POS 7-8: Corrente nominale (Ampere)
+            # Filtro: iC40/Resi9 max 40A, iC60 fino a 63A
+            if serie_code == "P":
+                amp_list = ["2A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A"]
+            else:
+                amp_list = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+            
+            amp_val = st.selectbox("Corrente (POS.7-8)", amp_list)
+            
+            # Formattazione speciale per 0.5A (codice 70) o zfill per gli altri
+            if amp_val == "0.5A":
+                amp_fixed = "70"
+            else:
+                amp_fixed = amp_val.replace("A", "").zfill(2)
 
-            codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
-            pos_data = [("1-2", fam_code), ("3", serie_code), ("4", p_code), ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)]
-
-        # --- 3. STRUTTURA iC40 / iDPN (Riferimento PDF A-4 / A-5) ---
-        elif linea == "Acti9 iC40 / iDPN (Compatto)":
-            with c1:
-                fam_code, serie_code = "A9", "P"
-                modello = st.selectbox("Modello", ["iC40N (6kA)", "iDPN (4.5kA)"])
-                # POS 4-5 per iC40: Curva C + PDI (54=6kA/C, 44=4.5kA/C)
-                pc_code = "54" if "iC40N" in modello else "44"
-                st.caption("Grammatica iC40: POS 4-5 accoppiate")
-
-            with c2:
-                # Solo Neutro integrato (PDF A-4)
-                poli_sel = st.selectbox("Poli (POS.6)", ["1P+N", "3P+N"])
-                pol_code = {"1P+N": "6", "3P+N": "7"}[poli_sel]
-                
-                amp_list = ["02", "04", "06", "10", "16", "20", "25", "32", "40"]
-                amp_fixed = st.selectbox("Corrente (POS.7-8)", amp_list)
-
-            codice_final = f"{fam_code}{serie_code}{pc_code}{pol_code}{amp_fixed}"
-            pos_data = [("1-2", fam_code), ("3", serie_code), ("4-5", pc_code), ("6", pol_code), ("7-8", amp_fixed)]
-
-        # Link alla ricerca ufficiale
-        url_base = "https://www.se.com/it/it/search/"
+        # COMPOSIZIONE FINALE
+        codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
+        
+        # Struttura per il layout grafico (pos_data)
+        pos_data = [
+            ("1-2", fam_code), ("3", serie_code), ("4", p_code), 
+            ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
+        ]
+        
+        # Link alla ricerca ufficiale Schneider
+        url_base = "https://www.se.com/it/it/search/"    
 
     
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
