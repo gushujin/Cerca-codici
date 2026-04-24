@@ -82,98 +82,94 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-    # --- LOGICA SCHNEIDER REVISIONATA (Relazioni Incrociate Totali da PDF) ---
+    # --- LOGICA SCHNEIDER SUDDIVISA PER FAMIGLIE (Coerenza Totale PDF) ---
     elif brand == "SCHNEIDER" and is_mcb:
-        c1, c2 = st.columns(2)
+        # 1. Selezione Sottogamma (Prodotto separato)
+        sottogamma = st.selectbox("Seleziona Linea Prodotto", [
+            "Acti9 iC60 (Industriale)", 
+            "Acti9 iC40 / iDPN (Compatto)", 
+            "Resi9 (Civile)"
+        ])
         
-        with c1:
-            # 1. SERIE (Determina la struttura di tutto il resto)
-            # Dati estratti da PDF: iC60 (Ind.), iC40/DPN (Compatti), Resi9 (Civile)
-            serie_sel = st.selectbox("Serie (POS.3)", [
-                "iC60N (Standard)", "iC60H (High)", "iC60L (Limiters)", 
-                "iC40N (Compact 6kA)", "iDPN (Salvaspazio 4.5kA)", "Resi9"
-            ])
+        st.divider()
+        c1, c2 = st.columns(2)
 
-            # Mappatura POS 1-2-3
-            if "Resi9" in serie_sel:
-                fam_code, serie_code = "R9", "F"
-            elif "iC40" in serie_sel:
-                fam_code, serie_code = "A9", "P"
-            elif "iDPN" in serie_sel:
-                fam_code, serie_code = "A9", "N"
-            else: # iC60
+        # --- SOTTOBLOCCO 1: iC60 (A9F...) ---
+        if sottogamma == "Acti9 iC60 (Industriale)":
+            with c1:
+                fam_code, serie_code = "A9", "F"
+                pdi_sel = st.selectbox("Potere Interruzione", ["iC60N (6kA)", "iC60H (10kA)", "iC60L (15kA)"])
+                p_code = {"iC60N (6kA)": "7", "iC60H (10kA)": "8", "iC60L (15kA)": "9"}[pdi_sel]
+                
+                curva_sel = st.selectbox("Curva (POS.5)", ["B", "C", "D"])
+                c_code = {"B": "3", "C": "4", "D": "5"}[curva_sel]
+
+            with c2:
+                poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P"])
+                pol_code = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}[poli_val]
+                
+                # Relazione Poli/Ampere: 0.5A non esiste su 1P (PDF A-9)
+                amp_list = ["1A", "2A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+                if pol_code != "1": 
+                    amp_list = ["0.5A"] + amp_list
+                
+                amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
+
+        # --- SOTTOBLOCCO 2: iC40 / iDPN (A9P... / A9N...) ---
+        elif sottogamma == "Acti9 iC40 / iDPN (Compatto)":
+            with c1:
+                sub_tipo = st.selectbox("Modello", ["iC40N (6kA)", "iDPN (4.5kA)"])
                 fam_code = "A9"
-                serie_code = "F" if "iC60N" in serie_sel else ("H" if "iC60H" in serie_sel else "L")
+                serie_code = "P" if "iC40" in sub_tipo else "N"
+                
+                curva_sel = st.selectbox("Curva (POS.5)", ["B", "C"])
+                c_code = {"B": "3", "C": "4"}[curva_sel]
+                # POS.4 fissa per serie compatti
+                p_code = "6" if "iDPN" in sub_tipo else "7"
 
-            # 2. PDI (POS.4) - Filtrato per Serie
-            if "iC60L" in serie_sel: pdi_opts = {"15 kA": "9", "25 kA": "L"}
-            elif "iC60H" in serie_sel: pdi_opts = {"10 kA": "8", "15 kA": "9"}
-            elif "iC60N" in serie_sel: pdi_opts = {"6 kA": "7", "10 kA": "8"}
-            elif "iC40N" in serie_sel: pdi_opts = {"6 kA": "7"}
-            elif "iDPN" in serie_sel: pdi_opts = {"4.5 kA": "6"}
-            else: # Resi9
-                pdi_opts = {"4.5 kA": "0", "6 kA": "1"}
-            
-            pdi_val = st.selectbox("PDI (POS.4)", list(pdi_opts.keys()))
-            p_code = pdi_opts[pdi_val]
-
-            # 3. CURVA (POS.5) - Filtrato per Serie
-            # PDF indica: Resi9 = C, iC40 = B/C, iC60 = B/C/D
-            if "Resi9" in serie_sel: 
-                curva_opts = {"Curva C": "4"}
-            elif "iC40" in serie_sel or "iDPN" in serie_sel:
-                curva_opts = {"Curva B": "3", "Curva C": "4"}
-            else:
-                curva_opts = {"Curva B": "3", "Curva C": "4", "Curva D": "5"}
-            
-            curva_val = st.selectbox("Curva (POS.5)", list(curva_opts.keys()))
-            c_code = curva_opts[curva_val]
-
-        with c2:
-            # 4. POLI (POS.6) - Relazione critica
-            # DPN e iC40 sono SOLO 1P+N o 3P+N (PDF A-4/A-5)
-            if "iC40" in serie_sel or "iDPN" in serie_sel:
-                pol_opts = {"1P+N": "5", "3P+N": "6"}
-            elif "Resi9" in serie_sel:
-                pol_opts = {"1P+N": "5", "2P": "2", "4P": "4"}
-            else: # iC60
-                pol_opts = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
-            
-            poli_val = st.selectbox("Poli (POS.6)", list(pol_opts.keys()))
-            pol_code = pol_opts[poli_val]
-
-            # 5. AMPERAGGIO (POS.7-8) - Relazione con Poli e Serie
-            # Gestione restrizione: iC40/Resi9 max 40A. 0.5A solo su iC60 >= 2P.
-            if "iC40" in serie_sel or "iDPN" in serie_sel:
+            with c2:
+                # RELAZIONE RIGIDA: Solo combinati (PDF A-4/A-5)
+                poli_val = st.selectbox("Poli (POS.6)", ["1P+N", "3P+N"])
+                pol_code = {"1P+N": "5", "3P+N": "6"}[poli_val]
+                
                 amp_list = ["2A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A"]
-            elif "Resi9" in serie_sel:
-                amp_list = ["6A", "10A", "16A", "20A", "25A", "32A", "40A"]
-            else: # iC60
-                if pol_code == "1": # 1P non ha solitamente 0.5A in pronta consegna
-                    amp_list = ["1A", "2A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
-                else:
-                    amp_list = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
-            
-            amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
-            
-            # Mappatura speciale Amperaggi (PDF A-9)
-            amp_map = {
-                "0.5A": "70", "1A": "01", "2A": "02", "3A": "03", "4A": "04", 
-                "6A": "06", "10A": "10", "16A": "16", "20A": "20", "25A": "25", 
-                "32A": "32", "40A": "40", "50A": "50", "63A": "63"
-            }
-            amp_fixed = amp_map[amp_sel]
+                amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
 
-        # COMPOSIZIONE E OUTPUT
+        # --- SOTTOBLOCCO 3: RESI9 (R9F...) ---
+        elif sottogamma == "Resi9 (Civile)":
+            with c1:
+                fam_code, serie_code = "R9", "F"
+                p_code = "1" # 6kA standard residenziale
+                st.info("PDI: 6kA (Standard Resi9)")
+                
+                curva_sel = st.selectbox("Curva (POS.5)", ["C"])
+                c_code = "2" # Mappatura reale Resi9 Curva C
+                st.info("Curva: C (Unica disponibile per questa gamma)")
+
+            with c2:
+                poli_val = st.selectbox("Poli (POS.6)", ["1P+N", "2P", "4P"])
+                pol_code = {"1P+N": "5", "2P": "2", "4P": "4"}[poli_val]
+                
+                amp_list = ["6A", "10A", "13A", "16A", "20A", "25A", "32A"]
+                amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
+
+        # --- LOGICA COMUNE DI MAPPATURA FINALE ---
+        amp_map = {
+            "0.5A": "70", "1A": "01", "2A": "02", "3A": "03", "4A": "04", 
+            "6A": "06", "10A": "10", "13A": "13", "16A": "16", "20A": "20", 
+            "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
+        }
+        amp_fixed = amp_map[amp_sel]
+
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        # Analisi struttura per il layout grafico (uniformato a Siemens)
+        # Analisi struttura per layout grafico tipo Siemens
         pos_data = [
             ("1-2", fam_code), ("3", serie_code), ("4", p_code), 
             ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
         ]
         
-        # Link alla ricerca ufficiale Schneider
+        # Link alla ricerca ufficiale
         url_base = "https://www.se.com/it/it/search/"
         
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
