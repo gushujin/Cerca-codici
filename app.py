@@ -83,7 +83,7 @@ with col_params:
         url_base = "https://support.industry.siemens.com/cs/products?search="
         
     # --- LOGICA SCHNEIDER (Abilitata solo se is_mcb è True) ---
-if brand == "SCHNEIDER" and is_mcb:
+    if brand == "SCHNEIDER" and is_mcb:
     c1, c2 = st.columns(2)
     with c1:
         famiglia_val = st.selectbox(
@@ -146,8 +146,7 @@ if brand == "SCHNEIDER" and is_mcb:
         ("7-8", amp_fixed),
     ]
     url_base = "https://www.se.com/it/it/product/range-presentation/" 
-    
-    
+        
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
     elif brand == "HAGER" and is_mcb:
         c1, c2 = st.columns(2)
