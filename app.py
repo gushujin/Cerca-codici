@@ -84,8 +84,8 @@ with col_params:
         
     # --- LOGICA SCHNEIDER (Abilitata solo se is_mcb è True) ---
     if brand == "SCHNEIDER" and is_mcb:
-    c1, c2 = st.columns(2)
-    with c1:
+        c1, c2 = st.columns(2)
+        with c1:
         famiglia_val = st.selectbox(
             "Famiglia (POS.3)",
             ["F = iC60", "P = iC40", "N = C120 / NG125"]
