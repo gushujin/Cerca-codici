@@ -82,7 +82,7 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-    # --- LOGICA SCHNEIDER (Relazioni incrociate da Catalogo PDF) ---
+    # --- LOGICA SCHNEIDER AGGIORNATA (Relazioni incrociate totali da PDF) ---
     elif brand == "SCHNEIDER" and is_mcb:
         c1, c2 = st.columns(2)
         
@@ -90,7 +90,7 @@ with col_params:
             # 1. Selezione Famiglia
             fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
             
-            # 2. Selezione Serie (Filtro dinamico basato su Famiglia)
+            # 2. Selezione Serie (Filtro basato su Famiglia)
             if fam_code == "R9":
                 serie_options = {"Resi9": "F"}
             else:
@@ -104,33 +104,32 @@ with col_params:
             serie_sel = st.selectbox("Serie (POS.3)", list(serie_options.keys()))
             serie_code = serie_options[serie_sel]
 
-            # 3. Selezione PDI (Filtro dinamico basato su Serie)
-            # Dati estratti: iC60L arriva a 25kA, Resi9 a 6kA
+            # 3. Selezione PDI (Filtro basato su Serie - Dati PDF A-9/A-11)
             if "iC60L" in serie_sel:
                 pdi_map = {"15 kA": "8", "25 kA": "9"}
             elif "iC60H" in serie_sel:
                 pdi_map = {"10 kA": "7", "15 kA": "8"}
             elif "iC60N" in serie_sel or "iC40N" in serie_sel:
                 pdi_map = {"6 kA": "6", "10 kA": "7"}
-            else: # Resi9 o DPN
+            else: # Resi9 o DPN standard
                 pdi_map = {"4.5 kA": "3", "6 kA": "6"}
             
             pdi_val = st.selectbox("PDI (POS.4)", list(pdi_map.keys()))
             p_code = pdi_map[pdi_val]
 
-            # 4. Curva (Resi9 nel PDF è quasi solo C, iC60 ha B-C-D)
+            # 4. Curva (Filtro basato su Serie)
             if "Resi9" in serie_sel:
                 curva_options = {"Curva C": "4"}
             elif "iC40" in serie_sel:
                 curva_options = {"Curva B": "3", "Curva C": "4"}
-            else:
+            else: # iC60 supporta tutto
                 curva_options = {"Curva B": "3", "Curva C": "4", "Curva D": "5"}
             
             curva_sel = st.selectbox("Curva (POS.5)", list(curva_options.keys()))
             c_code = curva_options[curva_sel]
 
         with c2:
-            # 5. Poli (Relazione critica: DPN e iC40 sono SOLO 1P+N o 3P+N nel PDF)
+            # 5. Poli (Relazione critica: iC40/DPN sono solo combinati)
             if "DPN" in serie_sel or "iC40" in serie_sel:
                 pol_map = {"1P+N": "5", "3P+N": "6"}
             else:
@@ -139,19 +138,24 @@ with col_params:
             poli_val = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
             pol_code = pol_map[poli_val]
 
-            # 6. Amperaggio (iC60 ha i piccoli tagli, iC40 parte da 6A)
-            if "iC40" in serie_sel or "Resi9" in serie_sel:
-                amp_options = ["6A", "10A", "16A", "20A", "25A", "32A", "40A"]
-            else:
-                amp_options = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+            # 6. Amperaggio (Filtro REALE basato sulla serie)
+            # Dati PDF: iC60 arriva a 63A, Resi9 e iC40 si fermano a 40A o 32A in base ai moduli
+            if "iC40" in serie_sel:
+                amp_list = ["2A", "4A", "6A", "10A", "13A", "16A", "20A", "25A", "32A", "40A"]
+            elif "Resi9" in serie_sel:
+                amp_list = ["6A", "10A", "16A", "20A", "25A", "32A"]
+            else: # Serie iC60 (Completa)
+                amp_list = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "13A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
             
-            amp_sel = st.selectbox("Corrente (POS.7-8)", amp_options)
+            amp_sel = st.selectbox("Corrente (POS.7-8)", amp_list)
             
-            # Mappatura speciale: 0.5A -> 70, gli altri zfill(2)
-            if amp_sel == "0.5A":
-                amp_fixed = "70"
-            else:
-                amp_fixed = amp_sel.replace("A", "").zfill(2)
+            # Mappatura speciale Amperaggi
+            amp_special_map = {
+                "0.5A": "70", "1A": "01", "2A": "02", "3A": "03", "4A": "04", 
+                "6A": "06", "10A": "10", "13A": "13", "16A": "16", "20A": "20", 
+                "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
+            }
+            amp_fixed = amp_special_map[amp_sel]
 
         # Composizione finale
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
