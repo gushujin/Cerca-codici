@@ -26,7 +26,19 @@ st.markdown("""
 
 # --- SIDEBAR: SELEZIONE ---
 st.sidebar.title("⚙️ Configurazione")
-categoria = st.sidebar.selectbox("Seleziona Categoria", ["Magnetotermici (MCB)"])
+
+# AGGIORNAMENTO: Nuove categorie inserite nel menù a tendina
+elenco_categorie = [
+    "Magnetotermici (MCB)", 
+    "Differenziali Puri", 
+    "Magnetotermici Differenziali", 
+    "Blocchi Differenziali"
+]
+categoria = st.sidebar.selectbox("Seleziona Categoria", elenco_categorie)
+
+# SCORCIATOIA LOGICA: Abilita i menù specifici solo per MCB
+is_mcb = (categoria == "Magnetotermici (MCB)")
+
 brand = st.sidebar.selectbox("Brand Selezionato", ["SIEMENS", "SCHNEIDER", "HAGER", "ABB", "GEWISS", "BTICINO"])
 
 st.title("🔌 Portale Tecnico Multibrand")
@@ -35,7 +47,7 @@ st.divider()
 col_params, col_res = st.columns([1.8, 1.2])
 
 with col_params:
-    st.subheader(f"🛠️ Specifiche Tecniche {brand}")
+    st.subheader(f"🛠️ {categoria} - {brand}")
     
     # Inizializzazione variabili comuni per evitare NameError
     codice_final = "N/D"
@@ -43,8 +55,12 @@ with col_params:
     url_base = ""
     pdi_val = poli_val = amp_val = curva_val = ""
 
-    # --- LOGICA SIEMENS ---
-    if brand == "SIEMENS":
+    # Se la categoria NON è MCB, mostra un avviso (da implementare in futuro)
+    if not is_mcb:
+        st.warning(f"La logica per **{categoria}** è in fase di implementazione. Al momento è attivo solo il configuratore Magnetotermici.")
+
+    # --- LOGICA SIEMENS (Abilitata solo se is_mcb è True) ---
+    if brand == "SIEMENS" and is_mcb:
         c1, c2 = st.columns(2)
         with c1:
             serie_val = st.selectbox("Serie (POS.3)", ["L=Standard", "Y=Industriale", "P=Di Potenza"])
@@ -66,73 +82,44 @@ with col_params:
         pos_data = [("1-2", "5S"), ("3", serie_code), ("4", p_code), ("5", pol_code), ("6-7", amp_fixed), ("8", c_code)]
         url_base = "https://support.industry.siemens.com/cs/products?search="
 
-    elif brand == "SCHNEIDER":
-        st.subheader("Configuratore Schneider Electric")
-        
+    # --- LOGICA SCHNEIDER (Abilitata solo se is_mcb è True) ---
+    elif brand == "SCHNEIDER" and is_mcb:
         c1, c2 = st.columns(2)
         with c1:
-            # POS. 1-2: FAMIGLIA
             fam_code = st.selectbox("Famiglia (POS.1-2)", ["A9", "R9"])
-
-            # POS. 3: SERIE (Opzioni catalogo Schneider)
-            # Abbiamo introdotto il menù a tendina con le serie richieste
             serie_map = {
-                "iC60N (Standard)": "F",
-                "iC60H (High)": "H",
-                "iC60L (Limiters)": "L",
-                "iK60": "K",
-                "DPN": "N",
-                "Resi9": "R"
+                "iC60N (Standard)": "F", "iC60H (High)": "H", "iC60L (Limiters)": "L",
+                "iK60": "K", "DPN": "N", "Resi9": "R"
             }
             serie_sel = st.selectbox("Serie (POS.3)", list(serie_map.keys()))
             serie_code = serie_map[serie_sel]
 
-            # POS. 4: PDI (Filtra in base alla Serie selezionata)
-            if "iC60N" in serie_sel:
-                pdi_options = ["6 kA", "10 kA"]
-            elif "iC60H" in serie_sel:
-                pdi_options = ["10 kA", "15 kA"]
-            elif "iC60L" in serie_sel:
-                pdi_options = ["15 kA", "25 kA"]
-            else:
-                pdi_options = ["4.5 kA", "6 kA"] # Default per iK60/Resi9
+            if "iC60N" in serie_sel: pdi_options = ["6 kA", "10 kA"]
+            elif "iC60H" in serie_sel: pdi_options = ["10 kA", "15 kA"]
+            elif "iC60L" in serie_sel: pdi_options = ["15 kA", "25 kA"]
+            else: pdi_options = ["4.5 kA", "6 kA"]
             
             pdi_val = st.selectbox("PDI (POS.4)", pdi_options)
-            # Mappatura tecnica PDI
             pdi_map = {"4.5 kA": "6", "6 kA": "7", "10 kA": "8", "15 kA": "9", "25 kA": "L"}
             p_code = pdi_map.get(pdi_val, "7")
-
-            # POS. 5: CURVA (B=3, C=4, D=5 confermati da etichette reali)
             curva_val = st.selectbox("Curva (POS.5)", ["Curva B", "Curva C", "Curva D"])
             curv_map = {"Curva B": "3", "Curva C": "4", "Curva D": "5"}
             c_code = curv_map[curva_val]
 
         with c2:
-            # POS. 6: POLI
             poli_val = st.selectbox("Poli (POS.6)", ["1P", "2P", "3P", "4P", "1P+N"])
             pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4", "1P+N": "5"}
             pol_code = pol_map[poli_val]
-
-            # POS. 7-8: CORRENTE NOMINALE
             amp_val = st.selectbox("Corrente (POS.7-8)", ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"])
-            amp_map = {
-                "6A": "06", "10A": "10", "16A": "16", "20A": "20", 
-                "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"
-            }
+            amp_map = {"6A": "06", "10A": "10", "16A": "16", "20A": "20", "25A": "25", "32A": "32", "40A": "40", "50A": "50", "63A": "63"}
             amp_fixed = amp_map[amp_val]
 
-        # Composizione finale del codice
         codice_final = f"{fam_code}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
-        
-        # Dati per l'analisi della struttura nel box grafico
-        pos_data = [
-            ("1-2", fam_code), ("3", serie_code), ("4", p_code), 
-            ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
-        ]
+        pos_data = [("1-2", fam_code), ("3", serie_code), ("4", p_code), ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)]
         url_base = "https://www.se.com/it/it/search/"
 
-    # --- LOGICA HAGER ---
-    elif brand == "HAGER":
+    # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
+    elif brand == "HAGER" and is_mcb:
         c1, c2 = st.columns(2)
         with c1:
             pdi_val = st.selectbox("PDI", ["6 kA", "10 kA", "15 kA"])
@@ -151,11 +138,10 @@ with col_params:
         pos_data = [("1", "M"), ("2", p_let), ("3", c_let), ("4", pol_num), ("5-6", amp_fixed)]
         url_base = "https://hager.com/it/ricerca?q="
 
-    # --- BOX ANALISI COMUNE (Visualizzato sotto i parametri) ---
+    # --- BOX ANALISI COMUNE ---
     if pos_data:
         st.markdown("---")
         st.write(f"🔍 **Analisi Struttura Codice {brand}**")
-        # Layout responsive usando flexbox via HTML
         boxes_html = "".join([f'<div class="pos-box"><div class="pos-label">POS.{l}</div><div class="pos-val">{v}</div></div>' for l, v in pos_data])
         st.markdown(f'<div class="analysis-container">{boxes_html}</div>', unsafe_allow_html=True)
 
@@ -177,4 +163,4 @@ with col_res:
             </div>
         """, unsafe_allow_html=True)
     else:
-        st.info("Seleziona un brand per generare il codice articolo.")
+        st.info("Configura i parametri per generare il codice articolo.")
