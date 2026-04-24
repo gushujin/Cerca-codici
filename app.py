@@ -93,87 +93,87 @@ with col_params:
         st.divider()
         c1, c2 = st.columns(2)
 
-    # --- LOGICA SCHNEIDER CON VINCOLI DINAMICI (Basata su schneider_decoder.docx e PDF A-2/A-31) ---
+    # --- LOGICA SCHNEIDER DEFINITIVA (Vincoli Rigidi da Decoder e PDF) ---
     elif brand == "SCHNEIDER" and is_mcb:
         st.subheader("Configuratore Schneider Electric")
-        c1, c2 = st.columns(2)
         
-        with c1:
-            # 1. POS 1-2: Prefisso Gamma
-            gamma_opts = {
-                "Acti9 / Multi9 (Standard)": "A9", 
-                "Resi9 (Residenziale - R9F)": "R9F", 
-                "Resi9 (Compatto - R9P)": "R9P"
-            }
-            gamma_sel = st.selectbox("Gamma (POS.1-2)", list(gamma_opts.keys()))
-            fam_prefix = gamma_opts[gamma_sel]
+        # 1. SELEZIONE LINEA (Reset dinamico delle opzioni)
+        linea_sel = st.selectbox("Seleziona Linea Prodotto", [
+            "Acti9 iC60 (Industriale Standard)", 
+            "Acti9 iC40 / iDPN (Compatto)", 
+            "Acti9 C120 / NG125 (Alta Corrente)",
+            "Resi9 (Residenziale)"
+        ])
+        
+        st.divider()
+        c1, c2 = st.columns(2)
 
-            # 2. POS 3: Famiglia Prodotto (Vincolata alla Gamma)
-            if fam_prefix == "A9":
-                serie_map = {"iC60 (Industriale)": "F", "iC40 (Compatto)": "P", "C120 / NG125": "N"}
-                serie_sel = st.selectbox("Famiglia (POS.3)", list(serie_map.keys()))
-                serie_code = serie_map[serie_sel]
-            else:
-                # Per Resi9 il codice serie è già nel prefisso (R9F/R9P), posizione 3 vuota
-                serie_code = ""
-                serie_sel = "Resi9"
+        # Inizializzazione variabili per evitare errori di riferimento
+        fam_prefix, serie_code, p_code, c_code, pol_code, amp_fixed = "", "", "", "", "", ""
 
-            # 3. POS 4: Livello di Prestazione (PDI) - Vincolato alla Serie
-            if serie_code == "N": # Serie C120 / NG125 (Pag. A-26/30 PDF)
-                pdi_map = {"NG125a (25kA)": "2", "NG125N (36kA)": "3", "NG125H (70kA)": "4", "NG125L (100kA)": "5"}
-            elif serie_code == "P": # Serie iC40 (Pag. A-4/5 PDF)
-                pdi_map = {"iC40a (4.5kA)": "4", "iC40N (6kA)": "5", "iC40H (10kA)": "6"}
-            elif fam_prefix.startswith("R9"): # Resi9 (Pag. A-2 PDF)
-                pdi_map = {"Resi9 (4.5kA)": "0", "Resi9 (6kA)": "1"}
-            else: # Serie iC60 (Pag. A-8/11 PDF)
-                pdi_map = {"iC60a (6kA)": "4", "iC60N (10kA)": "7", "iC60H (15kA)": "8", "iC60L (25kA)": "9"}
-            
-            pdi_sel = st.selectbox("Livello Prestazione / PDI (POS.4)", list(pdi_map.keys()))
-            p_code = pdi_map[pdi_sel]
-
-            # 4. POS 5: Curva di Intervento (Vincolata)
-            if fam_prefix.startswith("R9"):
-                curva_map = {"Curva C": "4"} # Resi9 standard
-            else:
-                curva_map = {
-                    "Curva B (3–5 In)": "3", "Curva C (5–10 In)": "4", 
-                    "Curva D (10–14 In)": "5", "Curva Z (Elettronica)": "2", 
-                    "Curva MA (Magnetico)": "0"
-                }
-            curva_sel = st.selectbox("Curva (POS.5)", list(curva_map.keys()))
-            c_code = curva_map[curva_sel]
-
-        with c2:
-            # 5. POS 6: Numero Poli (Vincoli rigidi da catalogo)
-            if serie_code == "P" or fam_prefix == "R9P": # iC40 e Resi9 Compatto sono solo 1P+N o 3P+N
-                pol_map = {"1P+N": "6", "3P+N": "7"}
-            else:
+        # --- A. LOGICA IC60 (A9F...) ---
+        if "iC60" in linea_sel:
+            fam_prefix, serie_code = "A9", "F"
+            with c1:
+                pdi_map = {"iC60a (6 kA)": "4", "iC60N (10 kA)": "7", "iC60H (15 kA)": "8", "iC60L (25 kA)": "9"}
+                p_code = pdi_map[st.selectbox("Prestazione (POS.4)", list(pdi_map.keys()))]
+                curva_map = {"B": "3", "C": "4", "D": "5", "Z": "2", "MA": "0"}
+                c_code = curva_map[st.selectbox("Curva (POS.5)", list(curva_map.keys()))]
+            with c2:
                 pol_map = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
-            
-            poli_sel = st.selectbox("Poli (POS.6)", list(pol_map.keys()))
-            pol_code = pol_map[poli_sel]
-
-            # 6. POS 7-8: Corrente Nominale (Vincolata alla taglia della famiglia)
-            if serie_code == "N": # Taglie grandi (PDF A-26)
-                amp_list = ["10", "16", "20", "25", "32", "40", "50", "63", "80", "100", "125"]
-            elif serie_code == "P" or fam_prefix.startswith("R9"): # Taglie compatte (PDF A-4)
-                amp_list = ["02", "04", "06", "10", "13", "16", "20", "25", "32", "40"]
-            else: # iC60 standard (PDF A-9)
+                pol_code = pol_map[st.selectbox("Poli (POS.6)", list(pol_map.keys()))]
                 amp_list = ["01", "02", "03", "04", "06", "10", "16", "20", "25", "32", "40", "50", "63"]
-            
-            amp_fixed = st.selectbox("Corrente In [A] (POS.7-8)", amp_list)
+                amp_fixed = st.selectbox("Amperaggio (POS.7-8)", amp_list)
 
-        # COMPOSIZIONE CODICE
+        # --- B. LOGICA IC40 / IDPN (A9P...) ---
+        elif "iC40" in linea_sel:
+            fam_prefix, serie_code = "A9", "P"
+            with c1:
+                pdi_map = {"iC40a (4.5 kA)": "4", "iC40N (6 kA)": "5", "iC40H (10 kA)": "6"}
+                p_code = pdi_map[st.selectbox("Prestazione (POS.4)", list(pdi_map.keys()))]
+                curva_map = {"B": "3", "C": "4"} # iC40 limitato a B e C
+                c_code = curva_map[st.selectbox("Curva (POS.5)", list(curva_map.keys()))]
+            with c2:
+                # VINCOLO POLI: iC40 ha solo 1P+N (6) o 3P+N (7) secondo decoder
+                pol_map = {"1P+N": "6", "3P+N": "7"}
+                pol_code = pol_map[st.selectbox("Poli (POS.6)", list(pol_map.keys()))]
+                amp_list = ["02", "04", "06", "10", "16", "20", "25", "32", "40"]
+                amp_fixed = st.selectbox("Amperaggio (POS.7-8)", amp_list)
+
+        # --- C. LOGICA NG125 (A9N...) ---
+        elif "NG125" in linea_sel:
+            fam_prefix, serie_code = "A9", "N"
+            with c1:
+                pdi_map = {"NG125a (25kA)": "2", "NG125N (36kA)": "3", "NG125H (70kA)": "4", "NG125L (100kA)": "5"}
+                p_code = pdi_map[st.selectbox("Prestazione (POS.4)", list(pdi_map.keys()))]
+                c_code = st.selectbox("Curva (POS.5)", ["3", "4", "5"]) # B, C, D
+            with c2:
+                pol_code = st.selectbox("Poli (POS.6)", ["2", "3", "4"])
+                amp_list = ["10", "16", "20", "25", "32", "40", "50", "63", "80", "100", "125"]
+                amp_fixed = st.selectbox("Amperaggio (POS.7-8)", amp_list)
+
+        # --- D. LOGICA RESI9 (R9F...) ---
+        elif "Resi9" in linea_sel:
+            fam_prefix, serie_code = "R9", "F" # Standard residenziale
+            with c1:
+                p_code = st.selectbox("PDI (POS.4)", ["0", "1"]) # 4.5kA o 6kA
+                c_code = "2" # Resi9 usa il 2 per la Curva C secondo logica R9F
+                st.info("Curva C preimpostata (POS.5 = 2)")
+            with c2:
+                pol_map = {"1P+N": "6", "2P": "2", "4P": "4"}
+                pol_code = pol_map[st.selectbox("Poli (POS.6)", list(pol_map.keys()))]
+                amp_list = ["06", "10", "13", "16", "20", "25", "32", "40"]
+                amp_fixed = st.selectbox("Amperaggio (POS.7-8)", amp_list)
+
+        # COMPOSIZIONE CODICE FINALE
         codice_final = f"{fam_prefix}{serie_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        # Struttura per il layout grafico (uniformato a blocco Siemens)
+        # Struttura per visualizzazione grafica (uniformata a Siemens)
         pos_data = [
             ("1-2", fam_prefix), ("3", serie_code if serie_code else "-"), 
             ("4", p_code), ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
         ]
-        
-        # Link ricerca tecnica Schneider
-        url_base = "https://www.se.com/it/it/search/"    
+        url_base = f"https://www.se.com/it/it/product/{codice_final}"   
 
     
     # --- LOGICA HAGER (Abilitata solo se is_mcb è True) ---
