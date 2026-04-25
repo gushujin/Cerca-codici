@@ -92,7 +92,9 @@ if df_map is not None:
     parti_codice.sort(key=lambda x: x['pos'])
     
     # Composizione stringa finale (ignora i pezzi non trovati ??)
-    codice_finale = "".join([p['val'] for p in parti_codice if p['val'] != "??"])
+    # codice_finale = "".join([p['val'] for p in parti_codice if p['val'] != "??"])
+    # Sostituisci la riga del codice_finale con questa per il debug:
+    codice_finale = "".join([p['val'] for p in parti_codice])
 
     # --- DISPLAY RISULTATO ---
     st.markdown("### Risultato Configurazione")
