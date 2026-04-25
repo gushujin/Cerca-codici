@@ -140,5 +140,5 @@ with col4:
     with c2:
         st.button("📄 Scarica Scheda Tecnica (PDF)")
 
-else:
+    else:
     st.warning("Assicurati che il file 'Master_Data.xlsx' sia presente nella stessa cartella dello script.")
