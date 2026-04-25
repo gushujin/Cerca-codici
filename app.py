@@ -32,7 +32,7 @@ if df_map is not None:
     brand_scelto = st.sidebar.selectbox("Seleziona il Brand", df_map['Brand'].unique())
     
     # Filtriamo gli ambiti disponibili per quel Brand specifico
-    Ambiti_disponibili = df_ambiti[df_Ambiti['Brand'] == brand_scelto]['Ambito_Utente'].unique()
+    Ambiti_disponibili = df_Ambiti[df_Ambiti['Brand'] == brand_scelto]['Ambito_Utente'].unique()
     Ambito_scelto = st.sidebar.selectbox("Campo Applicativo", Ambiti_disponibili)
 
     # Identifichiamo la Famiglia di sistema in base alle scelte
