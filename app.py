@@ -72,8 +72,8 @@ with col1:
 
 with col2:
     # Estrae i Poteri di Interruzione unici dall'Excel
-    opzioni_ka = df_famiglia[df_famiglia['Parametro'] == 'Potere_Interruzione']['Valore_Reale'].unique()
-    sel_ka = st.selectbox("Potere Interruzione", filter_menu("Potere_Interruzione", opzioni_ka))
+    opzioni_ka = df_famiglia[df_famiglia['Parametro'] == 'Pdi']['Valore_Reale'].unique()
+    sel_ka = st.selectbox("Potere Interruzione", filter_menu("Pdi", opzioni_ka))
 
 with col3:
     # Estrae le Correnti (In) uniche dall'Excel
