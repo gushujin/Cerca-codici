@@ -52,23 +52,38 @@ if df_map is not None:
         return [opt for opt in lista_master if str(opt) not in esclusioni]
 
     # Liste Master Universali (possono essere spostate in un foglio Excel dedicato in futuro)
-    master_poli = ["1P", "1P+N", "2P", "3P", "4P"]
-    master_ka = ["4.5kA", "6kA", "10kA", "15kA", "20kA", "25kA", "36kA"]
-    master_in = ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
-    master_curve = ["B", "C", "D", "K", "Z"]
+    # sotto l'elenco delle opzioni che compaiono nei menù a tendina_ora disabilitate
+    # master_poli = ["1P", "1P+N", "2P", "3P", "4P"]
+    # master_ka = ["4.5kA", "6kA", "10kA", "15kA", "20kA", "25kA", "36kA"]
+    # master_in = ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+    # master_curve = ["B", "C", "D", "K", "Z"]
 
-    # --- UI: CONFIGURAZIONE TECNICA ---
-    st.subheader("2. Caratteristiche Tecniche")
-    col1, col2, col3, col4 = st.columns(4)
+    # --- UI: CONFIGURAZIONE TECNICA DINAMICA ---
+st.subheader("2. Caratteristiche Tecniche")
+col1, col2, col3, col4 = st.columns(4)
 
-    with col1:
-        sel_poli = st.selectbox("Poli", filter_menu("Poli", master_poli))
-    with col2:
-        sel_ka = st.selectbox("Potere Interruzione", filter_menu("Potere_Interruzione", master_ka))
-    with col3:
-        sel_in = st.selectbox("Corrente Nominale (In)", filter_menu("Corrente", master_in))
-    with col4:
-        sel_curva = st.selectbox("Curva intervento", filter_menu("Curva", master_curve))
+# Filtriamo il mapping per la famiglia selezionata prima di estrarre le opzioni
+df_famiglia = df_map[df_map['Famiglia'] == famiglia_selezionata]
+
+with col1:
+    # Estrae i Poli unici presenti nell'Excel per questa famiglia
+    opzioni_poli = df_famiglia[df_famiglia['Parametro'] == 'Poli']['Valore_Reale'].unique()
+    sel_poli = st.selectbox("Poli", filter_menu("Poli", opzioni_poli))
+
+with col2:
+    # Estrae i Poteri di Interruzione unici dall'Excel
+    opzioni_ka = df_famiglia[df_famiglia['Parametro'] == 'Potere_Interruzione']['Valore_Reale'].unique()
+    sel_ka = st.selectbox("Potere Interruzione", filter_menu("Potere_Interruzione", opzioni_ka))
+
+with col3:
+    # Estrae le Correnti (In) uniche dall'Excel
+    opzioni_in = df_famiglia[df_famiglia['Parametro'] == 'Corrente']['Valore_Reale'].unique()
+    sel_in = st.selectbox("Corrente Nominale (In)", filter_menu("Corrente", opzioni_in))
+
+with col4:
+    # Estrae le Curve uniche dall'Excel
+    opzioni_curva = df_famiglia[df_famiglia['Parametro'] == 'Curva']['Valore_Reale'].unique()
+    sel_curva = st.selectbox("Curva intervento", filter_menu("Curva", opzioni_curva))
 
     # --- LOGICA DI COMPOSIZIONE CODICE (MAPPING) ---
     st.markdown("---")
