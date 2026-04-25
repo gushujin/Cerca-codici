@@ -11,16 +11,16 @@ def load_data():
     file_path = "Master_Data.xlsx" 
     try:
         # Carichiamo i tre fogli fondamentali
-        mapping = pd.read_excel(file_path, sheet_name='Mapping')
-        blacklist = pd.read_excel(file_path, sheet_name='Blacklist')
+        Mapping = pd.read_excel(file_path, sheet_name='Mapping')
+        Blacklist = pd.read_excel(file_path, sheet_name='Blacklist')
         # Il foglio 'Ambito' associa Brand + Scelta Utente alla Famiglia prodotto
-        ambiti = pd.read_excel(file_path, sheet_name='Ambiti')
-        return mapping, blacklist, ambiti
+        Ambiti = pd.read_excel(file_path, sheet_name='Ambiti')
+        return Mapping, Blacklist, Ambiti
     except Exception as e:
         st.error(f"Errore nel caricamento del file Excel: {e}")
         return None, None, None
 
-df_map, df_black, df_ambiti = load_data()
+df_map, df_Black, df_Ambiti = load_data()
 
 if df_map is not None:
     # --- UI: HEADER ---
@@ -32,21 +32,21 @@ if df_map is not None:
     brand_scelto = st.sidebar.selectbox("Seleziona il Brand", df_map['Brand'].unique())
     
     # Filtriamo gli ambiti disponibili per quel Brand specifico
-    ambiti_disponibili = df_ambiti[df_ambiti['Brand'] == brand_scelto]['Ambito_Utente'].unique()
-    ambito_scelto = st.sidebar.selectbox("Campo Applicativo", ambiti_disponibili)
+    Ambiti_disponibili = df_ambiti[df_Ambiti['Brand'] == brand_scelto]['Ambito_Utente'].unique()
+    Ambito_scelto = st.sidebar.selectbox("Campo Applicativo", Ambiti_disponibili)
 
     # Identifichiamo la Famiglia di sistema in base alle scelte
-    famiglia_selezionata = df_ambiti[(df_ambiti['Brand'] == brand_scelto) & 
-                                     (df_ambiti['Ambito_Utente'] == ambito_scelto)]['Famiglia_Sistema'].values[0]
+    famiglia_selezionata = df_Ambiti[(df_Ambiti['Brand'] == brand_scelto) & 
+                                     (df_Ambiti['Ambito_Utente'] == Ambito_scelto)]['Famiglia_Sistema'].values[0]
 
     st.sidebar.markdown(f"**Famiglia Corrente:** `{famiglia_selezionata}`")
     st.sidebar.markdown("---")
 
     # --- LOGICA A SOTTRAZIONE (PULIZIA MENU) ---
     def filter_menu(parametro, lista_master):
-        """Nasconde i valori presenti nella blacklist per la famiglia corrente."""
-        esclusioni = df_black[(df_black['Famiglia'] == famiglia_selezionata) & 
-                              (df_black['Parametro'] == parametro)]['Valore_da_Escludere'].tolist()
+        """Nasconde i valori presenti nella Blacklist per la famiglia corrente."""
+        esclusioni = df_Black[(df_Black['Famiglia'] == famiglia_selezionata) & 
+                              (df_Black['Parametro'] == parametro)]['Valore_da_Escludere'].tolist()
         # Convertiamo tutto in stringa per il confronto
         esclusioni = [str(e) for e in esclusioni]
         return [opt for opt in lista_master if str(opt) not in esclusioni]
