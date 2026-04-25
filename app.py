@@ -2,143 +2,107 @@ import streamlit as st
 import pandas as pd
 
 # 1. CONFIGURAZIONE PAGINA
-st.set_page_config(page_title="Configuratore Elettrotecnico", layout="wide")
+st.set_page_config(page_title="Configuratore Prodotti", layout="wide")
 
-# 2. FUNZIONE CARICAMENTO DATI
+# 2. CARICAMENTO DATI (Cache per velocità)
 @st.cache_data
-def load_data():
-    """Carica i fogli di lavoro dal file Excel Master."""
-    file_path = "Master_Data.xlsx" 
+def load_all_data():
+    file_path = "Master_Data.xlsx"
     try:
-        # Carichiamo i tre fogli fondamentali
-        Mapping = pd.read_excel(file_path, sheet_name='Mapping')
-        Blacklist = pd.read_excel(file_path, sheet_name='Blacklist')
-        # Il foglio 'Ambito' associa Brand + Scelta Utente alla Famiglia prodotto
-        Ambiti = pd.read_excel(file_path, sheet_name='Ambiti')
-        return Mapping, Blacklist, Ambiti
+        df_map = pd.read_excel(file_path, sheet_name='Mapping')
+        df_black = pd.read_excel(file_path, sheet_name='Blacklist')
+        df_ambiti = pd.read_excel(file_path, sheet_name='Ambiti')
+        
+        # Pulizia spazi bianchi accidentali
+        for df in [df_map, df_black, df_ambiti]:
+            for col in df.columns:
+                if df[col].dtype == 'object':
+                    df[col] = df[col].str.strip()
+        return df_map, df_black, df_ambiti
     except Exception as e:
         st.error(f"Errore nel caricamento del file Excel: {e}")
         return None, None, None
 
-df_map, df_Black, df_Ambiti = load_data()
+df_map, df_black, df_ambiti = load_all_data()
 
 if df_map is not None:
-    # --- UI: HEADER ---
-    st.title("⚡ Reverse Engineering Prodotto")
-    st.info("Parti dalle caratteristiche tecniche per generare il codice articolo corretto.")
-
-    # --- SIDEBAR: LE SCELTE DELL'UTENTE ---
-    st.sidebar.header("1. Contesto")
-    brand_scelto = st.sidebar.selectbox("Seleziona il Brand", df_map['Brand'].unique())
+    # --- SIDEBAR: SELEZIONE BRAND E AMBITO ---
+    st.sidebar.header("Filtri Principali")
+    lista_brand = df_ambiti['Brand'].unique()
+    brand_sel = st.sidebar.selectbox("Seleziona Brand", lista_brand)
     
-    # Filtriamo gli ambiti disponibili per quel Brand specifico
-    Ambiti_disponibili = df_Ambiti[df_Ambiti['Brand'] == brand_scelto]['Ambito_Utente'].unique()
-    Ambito_scelto = st.sidebar.selectbox("Campo Applicativo", Ambiti_disponibili)
+    ambiti_disp = df_ambiti[df_ambiti['Brand'] == brand_sel]['Ambito_Utente'].unique()
+    ambito_sel = st.sidebar.selectbox("Ambito", ambiti_disp)
+    
+    # Determina la Famiglia automaticamente
+    famiglia_sel = df_ambiti[(df_ambiti['Brand'] == brand_sel) & 
+                             (df_ambiti['Ambito_Utente'] == ambito_sel)]['Famiglia_Sistema'].values[0]
 
-    # Identifichiamo la Famiglia di sistema in base alle scelte
-    famiglia_selezionata = df_Ambiti[(df_Ambiti['Brand'] == brand_scelto) & 
-                                     (df_Ambiti['Ambito_Utente'] == Ambito_scelto)]['Famiglia_Sistema'].values[0]
-
-    st.sidebar.markdown(f"**Famiglia Corrente:** `{famiglia_selezionata}`")
-    st.sidebar.markdown("---")
-
-    # --- LOGICA A SOTTRAZIONE (PULIZIA MENU) ---
-    def filter_menu(parametro, lista_master):
-        """Nasconde i valori presenti nella Blacklist per la famiglia corrente."""
-        esclusioni = df_Black[(df_Black['Famiglia'] == famiglia_selezionata) & 
-                              (df_Black['Parametro'] == parametro)]['Valore_da_Escludere'].tolist()
-        # Convertiamo tutto in stringa per il confronto
-        esclusioni = [str(e) for e in esclusioni]
-        return [opt for opt in lista_master if str(opt) not in esclusioni]
-
-    # Liste Master Universali (possono essere spostate in un foglio Excel dedicato in futuro)
-    # sotto l'elenco delle opzioni che compaiono nei menù a tendina_ora disabilitate
-    # master_poli = ["1P", "1P+N", "2P", "3P", "4P"]
-    # master_ka = ["4.5kA", "6kA", "10kA", "15kA", "20kA", "25kA", "36kA"]
-    # master_in = ["6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
-    # master_curve = ["B", "C", "D", "K", "Z"]
-
-    # --- UI: CONFIGURAZIONE TECNICA DINAMICA ---
-st.subheader("2. Caratteristiche Tecniche")
-col1, col2, col3, col4 = st.columns(4)
-
-# Filtriamo il mapping per la famiglia selezionata prima di estrarre le opzioni
-df_famiglia = df_map[df_map['Famiglia'] == famiglia_selezionata]
-
-with col1:
-    # Estrae i Poli unici presenti nell'Excel per questa famiglia
-    opzioni_poli = df_famiglia[df_famiglia['Parametro'] == 'Poli']['Valore_Reale'].unique()
-    sel_poli = st.selectbox("Poli", filter_menu("Poli", opzioni_poli))
-
-with col2:
-    # Estrae i Poteri di Interruzione unici dall'Excel
-    opzioni_ka = df_famiglia[df_famiglia['Parametro'] == 'Pdi']['Valore_Reale'].unique()
-    sel_ka = st.selectbox("Potere Interruzione", filter_menu("Pdi", opzioni_ka))
-
-with col3:
-    # Estrae le Correnti (In) uniche dall'Excel
-    opzioni_in = df_famiglia[df_famiglia['Parametro'] == 'Corrente']['Valore_Reale'].unique()
-    sel_in = st.selectbox("Corrente Nominale (In)", filter_menu("Corrente", opzioni_in))
-
-with col4:
-    # Estrae le Curve uniche dall'Excel
-    opzioni_curva = df_famiglia[df_famiglia['Parametro'] == 'Curva']['Valore_Reale'].unique()
-    sel_curva = st.selectbox("Curva intervento", filter_menu("Curva", opzioni_curva))
-
-    # --- LOGICA DI COMPOSIZIONE CODICE (MAPPING) ---
+    st.title(f"Configuratore: {brand_sel} - {famiglia_sel}")
     st.markdown("---")
-    
-    # Filtriamo il mapping per la famiglia attiva
-    map_famiglia = df_map[df_map['Famiglia'] == famiglia_selezionata]
 
-    def get_segment(parametro, valore_reale):
-        """Trova il pezzo di codice corrispondente al valore tecnico scelto."""
+    # --- LOGICA FILTRO BLACKLIST ---
+    def get_clean_options(param_name, all_options):
+        esclusioni = df_black[(df_black['Famiglia'] == famiglia_sel) & 
+                              (df_black['Parametro'] == param_name)]['Valore_da_Escludere'].astype(str).tolist()
+        return [v for v in all_options if str(v) not in esclusioni]
+
+    # --- UI: CARATTERISTICHE TECNICHE (DINAMICHE DA EXCEL) ---
+    st.subheader("Parametri Tecnici")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    # Filtriamo il mapping per la famiglia corrente
+    df_f = df_map[df_map['Famiglia'] == famiglia_sel]
+
+    with col1:
+        opt_poli = sorted(df_f[df_f['Parametro'] == 'Poli']['Valore_Reale'].unique())
+        sel_poli = st.selectbox("Poli", get_clean_options("Poli", opt_poli))
+
+    with col2:
+        # Nota: Qui usiamo 'Pdi' perché è il nome che hai usato nell'ultima Legenda Excel
+        opt_pdi = sorted(df_f[df_f['Parametro'] == 'Pdi']['Valore_Reale'].unique())
+        sel_pdi = st.selectbox("Potere Interruzione", get_clean_options("Pdi", opt_pdi))
+
+    with col3:
+        opt_in = sorted(df_f[df_f['Parametro'] == 'Corrente']['Valore_Reale'].unique())
+        sel_in = st.selectbox("Corrente (In)", get_clean_options("Corrente", opt_in))
+
+    with col4:
+        opt_curva = sorted(df_f[df_f['Parametro'] == 'Curva']['Valore_Reale'].unique())
+        sel_curva = st.selectbox("Curva", get_clean_options("Curva", opt_curva))
+
+    # --- GENERAZIONE CODICE ARTICOLO ---
+    def fetch_segment(param, valore):
         try:
-            res = map_famiglia[(map_famiglia['Parametro'] == parametro) & 
-                               (map_famiglia['Valore_Reale'].astype(str) == str(valore_reale))]
-            return res['Segmento_Codice'].values[0], res['Posizione'].values[0]
+            res = df_f[(df_f['Parametro'] == param) & (df_f['Valore_Reale'].astype(str) == str(valore))]
+            return str(res['Segmento_Codice'].values[0]), res['Posizione'].values[0]
         except:
             return "??", 99
 
-    # Costruiamo i blocchi del codice
-    blocchi = []
+    parti_codice = []
     
-    # Aggiungiamo il Prefisso fisso della famiglia (Posizione 1)
-    prefisso_val = map_famiglia[map_famiglia['Parametro'] == 'Prefisso']['Segmento_Codice'].values[0]
-    blocchi.append({"testo": str(prefisso_val), "label": "Serie", "pos": 1})
+    # 1. Prefisso (sempre presente per famiglia)
+    try:
+        pref = df_f[df_f['Parametro'] == 'Prefisso']['Segmento_Codice'].values[0]
+        parti_codice.append({"val": str(pref), "pos": 1, "label": "Serie"})
+    except:
+        parti_codice.append({"val": "ERR", "pos": 1, "label": "Serie"})
 
-    # Aggiungiamo i parametri variabili (Poli, Corrente...)
-    seg_poli, pos_poli = get_segment("Poli", sel_poli)
-    blocchi.append({"testo": str(seg_poli), "label": "Poli", "pos": pos_poli})
-
-    seg_in, pos_in = get_segment("Corrente", sel_in)
-    blocchi.append({"testo": str(seg_in), "label": "Ampere", "pos": pos_in})
-
-    # Ordiniamo per posizione definita nell'Excel
-    blocchi_ordinati = sorted(blocchi, key=lambda x: x['pos'])
-    codice_finale = "".join([b['testo'] for b in blocchi_ordinati])
-
-    # --- UI: CODE VISUALIZER (CASSETTE GRAFICHE) ---
-    st.subheader("3. Codice Risultante")
+    # 2. Pezzi dinamici
+    v_poli, p_poli = fetch_segment("Poli", sel_poli)
+    parti_codice.append({"val": v_poli, "pos": p_poli, "label": "Poli"})
     
-    # Creiamo tante colonne quanti sono i blocchi
-    grid = st.columns(len(blocchi_ordinati))
-    for i, b in enumerate(blocchi_ordinati):
-        with grid[i]:
-            st.metric(label=b['label'], value=b['testo'])
+    v_in, p_in = fetch_segment("Corrente", sel_in)
+    parti_codice.append({"val": v_in, "pos": p_in, "label": "Ampere"})
 
-    # Visualizzazione codice completo
-    st.code(codice_finale, language="text")
+    # Ordinamento e composizione finale
+    parti_codice.sort(key=lambda x: x['pos'])
+    codice_finale = "".join([p['val'] for p in parti_codice])
 
-    # --- UI: AZIONI E LINK ---
-    url_base = map_famiglia['URL_Base'].iloc[0]
-    full_url = f"{url_base}{codice_finale}"
+    # --- DISPLAY RISULTATO ---
+    st.markdown("### Risultato Configurazione")
+    res_cols = st.columns(len(parti_codice))
+    for i, p in enumerate(parti_codice):
+        res_cols[i].metric(p['label'], p['val'])
 
-    c1, c2 = st.columns(2)
-    with c1:
-        st.link_button(f"🌐 Verifica sul sito {brand_scelto}", full_url)
-    with c2:
-        st.button("📄 Scarica Scheda Tecnica (PDF)")
-
-    else:
-    st.warning("Assicurati che il file 'Master_Data.xlsx' sia presente nella stessa cartella dello script.")
+    st.success(f"Codice Articolo Generato: **{codice_finale}**")
