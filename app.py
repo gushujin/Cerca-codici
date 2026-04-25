@@ -1,22 +1,20 @@
 import streamlit as st
 import pandas as pd
 
-# 1. CONFIGURAZIONE PAGINA
 st.set_page_config(page_title="Configuratore Siemens", layout="wide")
 
-# 2. CARICAMENTO DATI
 @st.cache_data
 def load_all_data():
     file_path = "Master_Data.xlsx"
     try:
+        # Carichiamo i fogli
         df_map = pd.read_excel(file_path, sheet_name='Mapping')
         df_ambiti = pd.read_excel(file_path, sheet_name='Ambiti')
         
-        # Pulizia preventiva di tutti i testi nell'Excel
-        for df in [df_map, df_ambiti]:
-            for col in df.columns:
-                if df[col].dtype == 'object':
-                    df[col] = df[col].str.strip()
+        # Pulizia totale spazi bianchi ovunque
+        df_map = df_map.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+        df_ambiti = df_ambiti.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+        
         return df_map, df_ambiti
     except Exception as e:
         st.error(f"Errore caricamento Excel: {e}")
@@ -25,86 +23,65 @@ def load_all_data():
 df_map, df_ambiti = load_all_data()
 
 if df_map is not None:
-    # --- SIDEBAR: FILTRI ---
     st.sidebar.header("Selezione Prodotto")
-    lista_brand = df_ambiti['Brand'].unique()
-    brand_sel = st.sidebar.selectbox("Brand", lista_brand)
+    brand_sel = st.sidebar.selectbox("Brand", df_ambiti['Brand'].unique())
     
     ambiti_disp = df_ambiti[df_ambiti['Brand'] == brand_sel]['Ambito_Utente'].unique()
     ambito_sel = st.sidebar.selectbox("Ambito Applicativo", ambiti_disp)
     
-    # Identifica la famiglia (es. 5SY, 5SL, 5SP)
     famiglia_sel = df_ambiti[(df_ambiti['Brand'] == brand_sel) & 
                              (df_ambiti['Ambito_Utente'] == ambito_sel)]['Famiglia_Sistema'].values[0]
 
     st.title(f"Configuratore: {brand_sel} - {famiglia_sel}")
     st.markdown("---")
 
-    # --- UI: PARAMETRI TECNICI ---
     df_f = df_map[df_map['Famiglia'] == famiglia_sel]
     
+    # --- INTERFACCIA SELEZIONE ---
     col1, col2, col3, col4 = st.columns(4)
 
+    # Funzione di supporto per evitare crash se il parametro non esiste nell'Excel
+    def get_options(param_name):
+        return sorted(df_f[df_f['Parametro'] == param_name]['Valore_Reale'].unique())
+
     with col1:
-        opt_poli = sorted(df_f[df_f['Parametro'] == 'Poli']['Valore_Reale'].unique())
-        sel_poli = st.selectbox("Poli", opt_poli)
-
+        sel_poli = st.selectbox("Poli", get_options('Poli'))
     with col2:
-        opt_pdi = sorted(df_f[df_f['Parametro'] == 'Pdi']['Valore_Reale'].unique())
-        sel_pdi = st.selectbox("Potere Interruzione (Pdi)", opt_pdi)
-
+        sel_pdi = st.selectbox("Pdi (kA)", get_options('Pdi'))
     with col3:
-        opt_curva = sorted(df_f[df_f['Parametro'] == 'Curva']['Valore_Reale'].unique())
-        sel_curva = st.selectbox("Curva d'intervento", opt_curva)
-
+        sel_curva = st.selectbox("Curva", get_options('Curva'))
     with col4:
-        opt_in = sorted(df_f[df_f['Parametro'] == 'Corrente']['Valore_Reale'].unique())
-        sel_in = st.selectbox("Corrente Nominale (In)", opt_in)
+        sel_in = st.selectbox("Corrente (In)", get_options('Corrente'))
 
-    # --- GENERAZIONE CODICE ARTICOLO (VERSIONE OTTIMIZZATA) ---
+    # --- LOGICA DI COSTRUZIONE CODICE ---
     def fetch_segment(param_name, valore_scelto):
-        try:
-            val_str = str(valore_scelto).strip()
-            # Cerca la riga corrispondente pulendo eventuali spazi
-            riga = df_f[(df_f['Parametro'] == param_name) & 
-                        (df_f['Valore_Reale'].astype(str).str.strip() == val_str)]
-            
-            if not riga.empty:
-                return str(riga['Segmento_Codice'].values[0]), riga['Posizione'].values[0]
-            return "??", 99
-        except:
-            return "??", 99
+        riga = df_f[(df_f['Parametro'] == param_name) & 
+                    (df_f['Valore_Reale'].astype(str) == str(valore_scelto))]
+        if not riga.empty:
+            return str(riga['Segmento_Codice'].values[0]), riga['Posizione'].values[0]
+        return "??", 99
 
-    parti_codice = []
+    parti = []
+    # Aggiungiamo i pezzi
+    parti.append({"label": "Serie", "val": fetch_segment("Prefisso", "Universale")[0], "pos": 1})
+    parti.append({"label": "Poli", "val": fetch_segment("Poli", sel_poli)[0], "pos": fetch_segment("Poli", sel_poli)[1]})
+    parti.append({"label": "PDI", "val": fetch_segment("Pdi", sel_pdi)[0], "pos": fetch_segment("Pdi", sel_pdi)[1]})
+    parti.append({"label": "Curva", "val": fetch_segment("Curva", sel_curva)[0], "pos": fetch_segment("Curva", sel_curva)[1]})
+    parti.append({"label": "Ampere", "val": fetch_segment("Corrente", sel_in)[0], "pos": fetch_segment("Corrente", sel_in)[1]})
+
+    # Ordiniamo per posizione
+    parti.sort(key=lambda x: x['pos'])
     
-    # 1. Recupero Prefisso
-    pref_row = df_f[df_f['Parametro'] == 'Prefisso']
-    if not pref_row.empty:
-        parti_codice.append({"val": str(pref_row['Segmento_Codice'].values[0]), "pos": 1, "label": "Serie"})
+    # Generazione stringa finale
+    codice_generato = "".join([p['val'] for p in parti if p['val'] != "??"])
 
-    # 2. Recupero Parametri Dinamici
-    parti_codice.append({"val": fetch_segment("Poli", sel_poli)[0], "pos": fetch_segment("Poli", sel_poli)[1], "label": "Poli"})
-    parti_codice.append({"val": fetch_segment("Pdi", sel_pdi)[0], "pos": fetch_segment("Pdi", sel_pdi)[1], "label": "PDI"})
-    parti_codice.append({"val": fetch_segment("Curva", sel_curva)[0], "pos": fetch_segment("Curva", sel_curva)[1], "label": "Curva"})
-    parti_codice.append({"val": fetch_segment("Corrente", sel_in)[0], "pos": fetch_segment("Corrente", sel_in)[1], "label": "Ampere"})
-
-    # Ordinamento per posizione definita nell'Excel
-    parti_codice.sort(key=lambda x: x['pos'])
-    
-    # Composizione stringa finale (ignora i pezzi non trovati ??)
-    # codice_finale = "".join([p['val'] for p in parti_codice if p['val'] != "??"])
-    # Sostituisci la riga del codice_finale con questa per il debug:
-    codice_finale = "".join([p['val'] for p in parti_codice])
-
-    # --- DISPLAY RISULTATO ---
-    st.markdown("### Risultato Configurazione")
-    
-    if "??" in [p['val'] for p in parti_codice]:
-        st.warning("Attenzione: Alcuni segmenti non sono stati trovati nel Mapping. Verifica i nomi nell'Excel.")
-
-    # Mostra i quadratini delle metriche
-    res_cols = st.columns(len(parti_codice))
-    for i, p in enumerate(parti_codice):
+    # --- DISPLAY ---
+    st.subheader("Risultato")
+    res_cols = st.columns(len(parti))
+    for i, p in enumerate(parti):
         res_cols[i].metric(p['label'], p['val'])
 
-    st.success(f"Codice Articolo Siemens Generato: **{codice_finale}**")
+    if len(codice_generato) < 5: # Lunghezza minima indicativa
+        st.error("Errore: Il mapping non è completo per questa combinazione.")
+    else:
+        st.success(f"Codice Articolo: **{codice_generato}**")
