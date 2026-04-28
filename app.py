@@ -1,94 +1,71 @@
-import streamlit as st
-import pandas as pd
-import re
-
-st.set_page_config(page_title="Configuratore Siemens", layout="wide")
-
-@st.cache_data
-def load_all_data():
-    file_path = "Master_Data.xlsx"
-    try:
-        # Carichiamo i fogli (aggiunta gestione errore nomi fogli)
-        df_map = pd.read_excel(file_path, sheet_name='Mapping')
-        df_ambiti = pd.read_excel(file_path, sheet_name='Ambiti')
+# --- LOGICA SCHNEIDER (Basata su schneider_decoder.docx) ---
+    elif brand == "SCHNEIDER" and is_mcb:
+        c1, c2 = st.columns(2)
         
-        # Pulizia: tutto in stringa e senza spazi ai bordi
-        df_map = df_map.astype(str).apply(lambda x: x.str.strip())
-        df_ambiti = df_ambiti.astype(str).apply(lambda x: x.str.strip())
+        with c1:
+            # Selezione Famiglia (POS.3)
+            famiglia_val = st.selectbox(
+                "Famiglia (POS.3)",
+                ["F = iC60", "P = iC40", "N = C120 / NG125"]
+            )
+            famiglia_code = famiglia_val[0]
+
+            # Vincoli dinamici per PDI (POS.4) basati sulla Famiglia
+            if famiglia_code == "P": # iC40
+                pdi_opts = {"4.5 kA (versione a)": "4", "6 kA (versione N)": "5", "10 kA (versione H)": "6"}
+            elif famiglia_code == "N": # NG125
+                pdi_opts = {"25 kA (versione a)": "2", "36 kA (versione N)": "3", "70 kA (versione H)": "4", "100 kA (versione L)": "5"}
+            else: # iC60
+                pdi_opts = {"6 kA (versione a)": "4", "10 kA (versione N)": "7", "15 kA (versione H)": "8", "25 kA (versione L)": "9"}
+            
+            pdi_val = st.selectbox("Potere di Interruzione (POS.4)", list(pdi_opts.keys()))
+            p_code = pdi_opts[pdi_val]
+
+        with c2:
+            # Curva di intervento (POS.5)
+            curva_val = st.selectbox(
+                "Curva di intervento (POS.5)",
+                ["Curva B (3–5 In)", "Curva C (5–10 In)", "Curva D (10–14 In)", "Curva Z (3 In)", "Curva MA (solo magnetico)"]
+            )
+            curv_map = {"Curva B (3–5 In)": "3", "Curva C (5–10 In)": "4", "Curva D (10–14 In)": "5", "Curva Z (3 In)": "2", "Curva MA (solo magnetico)": "0"}
+            c_code = curv_map.get(curva_val)
+
+            # Poli (POS.6) - Vincolo iC40
+            if famiglia_code == "P":
+                pol_opts = {"1P+N": "6", "3P+N": "7"}
+            else:
+                pol_opts = {"1P": "1", "2P": "2", "3P": "3", "4P": "4"}
+            
+            poli_sel = st.selectbox("Poli (POS.6)", list(pol_opts.keys()))
+            pol_code = pol_opts[poli_sel]
+
+            # Corrente (POS.7-8) - Vincolo Amperaggio
+            if famiglia_code == "N":
+                amp_list = ["10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A", "80A", "100A", "125A"]
+            else:
+                amp_list = ["0.5A", "1A", "2A", "3A", "4A", "6A", "10A", "16A", "20A", "25A", "32A", "40A", "50A", "63A"]
+            
+            amp_val = st.selectbox("Corrente nominale In (POS.7-8)", amp_list)
+            
+            # Formattazione corrente
+            amp_raw = amp_val.replace("A", "")
+            if amp_raw == "0.5":
+                amp_fixed = "70"
+            else:
+                amp_fixed = amp_raw.zfill(2)
+
+        # Generazione Codice Finale
+        codice_final = f"A9{famiglia_code}{p_code}{c_code}{pol_code}{amp_fixed}"
         
-        return df_map, df_ambiti
-    except Exception as e:
-        st.error(f"Errore caricamento Excel: {e}")
-        return None, None
+        pos_data = [
+            ("1-2", "A9"), ("3", famiglia_code), ("4", p_code), 
+            ("5", c_code), ("6", pol_code), ("7-8", amp_fixed)
+        ]
+        url_base = "https://www.se.com/it/it/search/"
 
-df_map, df_ambiti = load_all_data()
-
-if df_map is not None:
-    # --- SIDEBAR ---
-    st.sidebar.header("Selezione Prodotto")
-    brand_sel = st.sidebar.selectbox("Brand", df_ambiti['Brand'].unique())
-    
-    ambiti_disp = df_ambiti[df_ambiti['Brand'] == brand_sel]['Ambito_Utente'].unique()
-    ambito_sel = st.sidebar.selectbox("Ambito Applicativo", ambiti_disp)
-    
-    famiglia_sel = df_ambiti[(df_ambiti['Brand'] == brand_sel) & 
-                             (df_ambiti['Ambito_Utente'] == ambito_sel)]['Famiglia_Sistema'].values[0]
-
-    st.title(f"Configuratore: {brand_sel} - {famiglia_sel}")
-    st.markdown("---")
-
-    # Filtriamo il mapping per la famiglia selezionata
-    df_f = df_map[df_map['Famiglia'] == famiglia_sel]
-    
-    # --- INTERFACCIA SELEZIONE ---
-    col1, col2, col3, col4 = st.columns(4)
-
-    def get_options(param_name):
-        opts = df_f[df_f['Parametro'] == param_name]['Valore_Reale'].unique()
-        return sorted(opts)
-
-    with col1: sel_poli = st.selectbox("Poli", get_options('Poli'))
-    with col2: sel_pdi = st.selectbox("Pdi (kA)", get_options('Pdi'))
-    with col3: sel_curva = st.selectbox("Curva", get_options('Curva'))
-    with col4: sel_in = st.selectbox("Corrente (In)", get_options('Corrente'))
-
-    # --- LOGICA DI GENERAZIONE ---
-    def fetch_segment(param_name, valore_scelto):
-        # Confronto super-flessibile: togliamo unità di misura e spazi
-        def clean(v): return re.sub(r'[^a-zA-Z0-9+]', '', str(v)).upper()
-        
-        target = clean(valore_scelto)
-        # Cerchiamo nella colonna Valore_Reale
-        for _, row in df_f[df_f['Parametro'] == param_name].iterrows():
-            if clean(row['Valore_Reale']) == target:
-                return str(row['Segmento_Codice']), int(row['Posizione'])
-        return "??", 99
-
-    parti = []
-    # 1. Prefisso (sempre presente)
-    pref_row = df_f[df_f['Parametro'] == 'Prefisso']
-    if not pref_row.empty:
-        parti.append({"label": "Serie", "val": str(pref_row['Segmento_Codice'].values[0]), "pos": 1})
-
-    # 2. Gli altri parametri
-    for p_name, p_sel, p_label in [("Poli", sel_poli, "Poli"), 
-                                   ("Pdi", sel_pdi, "PDI"), 
-                                   ("Curva", sel_curva, "Curva"), 
-                                   ("Corrente", sel_in, "Ampere")]:
-        val, pos = fetch_segment(p_name, p_sel)
-        parti.append({"label": p_label, "val": val, "pos": pos})
-
-    # Ordiniamo e creiamo il codice
-    parti.sort(key=lambda x: x['pos'])
-    codice_generato = "".join([p['val'] for p in parti if p['val'] != "??"])
-
-    # --- DISPLAY ---
-    st.subheader("Risultato")
-    cols = st.columns(len(parti))
-    for i, p in enumerate(parti):
-        cols[i].metric(p['label'], p['val'])
-
-    if "??" in [x['val'] for x in parti]:
-        st.error("Errore: Alcuni valori non hanno un corrispettivo nel Mapping Excel.")
-    else:
-        st.success(f"Codice Articolo Generato: **{codice_generato}**")
+    # --- LOGICA HAGER ---
+    elif brand == "HAGER" and is_mcb:
+        c1, c2 = st.columns(2)
+        with c1:
+            # ... continua il codice Hager qui ...
+            pass
