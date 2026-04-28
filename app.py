@@ -7,6 +7,10 @@ Adattato al file Master_Data.xlsx con fogli:
   - Blacklist : Brand | Famiglia | Parametro | Valore_da_Escludere
   - Legenda   : Poli | Pdi | Corrente | Curva
 
+LOGICA POSIZIONE: la colonna Posizione indica l'ordine di concatenazione
+dei segmenti (1=primo, 2=secondo, …), NON un indice di carattere.
+Il codice finale = segmenti ordinati per Posizione e concatenati.
+
 Requisiti:
     pip install streamlit pandas openpyxl requests
 
@@ -25,14 +29,13 @@ from io import BytesIO
 DEFAULT_EXCEL_URL = (
     "https://raw.githubusercontent.com/your-user/your-repo/main/Master_Data.xlsx"
 )
-PLACEHOLDER_CHAR = "_"
+PLACEHOLDER_CHAR = "?"   # Carattere per parametri non ancora selezionati
 
 
 # ─────────────────────────────────────────────
 #  CARICAMENTO DATI
 # ─────────────────────────────────────────────
 def _parse_workbook(raw: BytesIO):
-    """Legge i 4 fogli dal BytesIO: Ambiti, Mapping, Blacklist, Legenda."""
     df_ambiti = pd.read_excel(raw, sheet_name="Ambiti", dtype=str).fillna("")
 
     raw.seek(0)
@@ -79,47 +82,49 @@ def load_from_upload(file_bytes: bytes):
 # ─────────────────────────────────────────────
 def build_code(selections: dict, famiglia_df: pd.DataFrame) -> tuple:
     """
-    Ricostruisce il codice inserendo ogni Segmento_Codice
-    nella Posizione indicata nel foglio Mapping.
-    Lunghezza finale dedotta automaticamente dai dati.
+    Ricostruisce il codice concatenando i Segmento_Codice
+    nell'ordine indicato dalla colonna Posizione (1, 2, 3, …).
+
+    Se un parametro non è presente in selections (non ancora scelto),
+    viene inserito un placeholder.
+
+    Restituisce (codice_finale, url_base, lista_slot).
     """
-    max_end = 0
-    for parametro, valore in selections.items():
-        row = famiglia_df[
-            (famiglia_df["Parametro"] == parametro) &
-            (famiglia_df["Valore_Reale"] == valore)
-        ]
-        if row.empty:
-            continue
-        pos = int(row.iloc[0]["Posizione"])
-        seg = str(row.iloc[0]["Segmento_Codice"])
-        max_end = max(max_end, pos + len(seg) - 1)
+    # Raccoglie tutti i parametri distinti della famiglia con la loro posizione
+    slot_df = (
+        famiglia_df[["Parametro", "Posizione"]]
+        .drop_duplicates("Parametro")
+        .sort_values("Posizione")
+    )
 
-    total_len = max(max_end, 8)
-    code_chars = [PLACEHOLDER_CHAR] * total_len
     url_base = ""
+    segmenti = []       # lista di (posizione, segmento_stringa, parametro, valore)
 
-    for parametro, valore in selections.items():
+    for _, slot in slot_df.iterrows():
+        parametro = slot["Parametro"]
+        posizione = int(slot["Posizione"])
+        valore = selections.get(parametro)
+
+        if valore is None:
+            segmenti.append((posizione, PLACEHOLDER_CHAR, parametro, "—"))
+            continue
+
         row = famiglia_df[
             (famiglia_df["Parametro"] == parametro) &
             (famiglia_df["Valore_Reale"] == valore)
         ]
         if row.empty:
+            segmenti.append((posizione, PLACEHOLDER_CHAR, parametro, valore))
             continue
+
         r = row.iloc[0]
         seg = str(r["Segmento_Codice"])
-        pos = int(r["Posizione"])  # 1-based
         url_base = str(r["URL_Base"]) if r["URL_Base"] else url_base
+        segmenti.append((posizione, seg, parametro, valore))
 
-        start = pos - 1
-        for i, ch in enumerate(seg):
-            idx = start + i
-            if idx >= len(code_chars):
-                code_chars.append(ch)
-            else:
-                code_chars[idx] = ch
-
-    return "".join(code_chars), url_base
+    # Codice finale = concatenazione in ordine di posizione
+    final_code = "".join(s[1] for s in segmenti)
+    return final_code, url_base, segmenti
 
 
 def is_blacklisted(brand: str, famiglia: str, parametro: str,
@@ -169,6 +174,10 @@ def main():
             color: var(--accent);
             letter-spacing: 0.18em;
             word-break: break-all;
+        }
+        .code-display .seg-placeholder {
+            color: #CC3300;
+            opacity: 0.7;
         }
         .brand-badge {
             display: inline-block;
@@ -296,15 +305,13 @@ def main():
             st.stop()
 
         # ── Parametri tecnici dinamici ────────
-        parametri_all = fam_df["Parametro"].unique().tolist()
-        # Prefisso sempre primo, resto in ordine di posizione media
-        def sort_key(p):
-            if p == "Prefisso":
-                return (0, 0)
-            avg_pos = fam_df[fam_df["Parametro"] == p]["Posizione"].astype(int).mean()
-            return (1, avg_pos)
-
-        parametri_order = sorted(parametri_all, key=sort_key)
+        # Ordine: per Posizione crescente (Prefisso ha Pos=1, viene sempre per primo)
+        parametri_order = (
+            fam_df[["Parametro", "Posizione"]]
+            .drop_duplicates("Parametro")
+            .sort_values("Posizione")["Parametro"]
+            .tolist()
+        )
 
         st.markdown("---")
         st.markdown("#### 🔧 Parametri Tecnici")
@@ -333,7 +340,7 @@ def main():
                 )
                 continue
 
-            # Prefisso fisso → non mostrare selectbox
+            # Prefisso fisso (unico valore) → etichetta, nessun selectbox
             if parametro == "Prefisso" and len(valori_visibili) == 1:
                 selections[parametro] = valori_visibili[0]
                 seg = fam_df[
@@ -342,7 +349,8 @@ def main():
                 ].iloc[0]["Segmento_Codice"]
                 st.markdown(
                     f'<div class="prefisso-info">'
-                    f'🔒 <b>Prefisso</b>: <code>{seg}</code> — {valori_visibili[0]}</div>',
+                    f'🔒 <b>Prefisso</b> (Pos. 1): <code>{seg}</code>'
+                    f' — {valori_visibili[0]}</div>',
                     unsafe_allow_html=True,
                 )
                 continue
@@ -373,7 +381,7 @@ def main():
         if not selections:
             st.info("👈 Seleziona i parametri per generare il codice.")
         else:
-            final_code, url_base = build_code(selections, fam_df)
+            final_code, url_base, segmenti = build_code(selections, fam_df)
             has_placeholder = PLACEHOLDER_CHAR in final_code
 
             st.markdown(f'<span class="brand-badge">{brand}</span>', unsafe_allow_html=True)
@@ -388,60 +396,81 @@ def main():
 
             if has_placeholder:
                 st.warning(
-                    f"⚠️ Posizioni non definite (`{PLACEHOLDER_CHAR}`): "
-                    "completa tutti i parametri."
+                    f"⚠️ Parametri mancanti (`{PLACEHOLDER_CHAR}`): "
+                    "completa tutte le selezioni per ottenere il codice completo."
                 )
 
-            if url_base:
+            if url_base and not has_placeholder:
                 search_url = url_base + final_code
                 st.markdown(
                     f"🔗 **[Cerca sul portale del fornitore]({search_url})**",
                     unsafe_allow_html=True,
                 )
                 st.caption(f"`{search_url}`")
+            elif url_base and has_placeholder:
+                st.caption("🔗 Il link sarà disponibile quando il codice è completo.")
             else:
                 st.caption("(URL_Base non definito per questa Famiglia)")
 
-            st.text_input("📋 Copia codice:", value=final_code, key="code_copy")
+            st.text_input(
+                "📋 Copia codice:",
+                value=final_code,
+                key="code_copy",
+                disabled=has_placeholder,
+            )
             st.divider()
 
-            # Riepilogo parametri selezionati
-            st.markdown("#### 📝 Riepilogo Parametri")
+            # Riepilogo segmenti in ordine di costruzione
+            st.markdown("#### 📝 Struttura del Codice")
             riepilogo = []
-            for par, val in selections.items():
-                row = fam_df[
-                    (fam_df["Parametro"] == par) & (fam_df["Valore_Reale"] == val)
-                ]
-                seg = row.iloc[0]["Segmento_Codice"] if not row.empty else "—"
-                pos = row.iloc[0]["Posizione"] if not row.empty else "—"
+            for pos, seg, par, val in segmenti:
                 riepilogo.append({
+                    "Pos.": pos,
                     "Parametro": par,
                     "Valore": val,
                     "Segmento": seg,
-                    "Pos.": pos,
+                    "Stato": "✅" if seg != PLACEHOLDER_CHAR else "⏳",
                 })
-            st.dataframe(pd.DataFrame(riepilogo), use_container_width=True, hide_index=True)
-
-            # Struttura carattere per carattere
-            st.markdown("#### 🧬 Struttura Codice")
-            rows_struct = []
-            for i, ch in enumerate(final_code, 1):
-                rows_struct.append({
-                    "Pos": i,
-                    "Char": ch,
-                    "Stato": "⬜ Libero" if ch == PLACEHOLDER_CHAR else "🔷 Definito",
-                })
-            df_struct = pd.DataFrame(rows_struct)
+            df_riepilogo = pd.DataFrame(riepilogo)
             st.dataframe(
-                df_struct,
+                df_riepilogo,
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Pos":   st.column_config.NumberColumn("Pos",  width=60),
-                    "Char":  st.column_config.TextColumn("Char",   width=60),
-                    "Stato": st.column_config.TextColumn("Stato"),
+                    "Pos.":      st.column_config.NumberColumn("Pos.", width=55),
+                    "Parametro": st.column_config.TextColumn("Parametro"),
+                    "Valore":    st.column_config.TextColumn("Valore"),
+                    "Segmento":  st.column_config.TextColumn("Segmento"),
+                    "Stato":     st.column_config.TextColumn("Stato", width=60),
                 },
-                height=min(35 * len(rows_struct) + 38, 420),
+            )
+
+            # Visualizzazione composizione codice
+            st.markdown("#### 🧬 Composizione")
+            parts_html = ""
+            colors = [
+                "#0066CC", "#007A33", "#8B3A8B", "#CC6600",
+                "#006699", "#993300", "#336600", "#660066",
+            ]
+            for i, (pos, seg, par, _) in enumerate(segmenti):
+                color = colors[i % len(colors)]
+                is_ph = seg == PLACEHOLDER_CHAR
+                style = (
+                    f"display:inline-block;padding:4px 6px;margin:2px;"
+                    f"border-radius:4px;font-family:monospace;font-size:1.1rem;"
+                    f"font-weight:700;letter-spacing:0.1em;"
+                )
+                if is_ph:
+                    style += "background:#FFE4D6;color:#CC3300;border:1px dashed #CC3300;"
+                else:
+                    style += f"background:{color}18;color:{color};border:1px solid {color}44;"
+                label = f'<div style="font-size:0.65rem;color:#888;text-align:center">{par}</div>'
+                parts_html += f'<div style="display:inline-block;text-align:center;margin:2px">{label}<span style="{style}">{seg}</span></div>'
+
+            st.markdown(
+                f'<div style="background:#F8F9FA;border-radius:8px;padding:12px 10px;'
+                f'border:1px solid #DFE1E6;margin-bottom:8px">{parts_html}</div>',
+                unsafe_allow_html=True,
             )
 
     st.divider()
